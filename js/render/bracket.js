@@ -33,7 +33,7 @@ function makeBtCard(match) {
 
 // Crea una columna de ronda con cards posicionadas absolutamente
 // colDelay: segundos de retraso para la animación de entrada (escalonado por columna)
-function makeBtColumn(matches, centers, title, colDelay = 0) {
+function makeBtColumn(matches, centers, title, colDelay = 0, rtl = false) {
   const wrap = document.createElement('div');
   wrap.className = 'bt-col-wrap';
 
@@ -51,6 +51,8 @@ function makeBtColumn(matches, centers, title, colDelay = 0) {
     const card = makeBtCard(m);
     card.style.top = (centers[i] - BT.H / 2) + 'px';
     card.style.animationDelay = colDelay + 's';
+    card.style.setProperty('--shimmer-delay', (colDelay + 0.45) + 's');
+    if (rtl) card.classList.add('bt-shimmer-rtl');
     col.appendChild(card);
   });
 
@@ -127,10 +129,10 @@ function renderBracket() {
   // Mitad derecha: SF → QF → Oct → R32 (simétrico: entrada desde el centro hacia afuera)
   const rightHalf = document.createElement('div');
   rightHalf.className = 'bt-half';
-  rightHalf.appendChild(makeBtColumn(rightSF,  pos.sf,  'Semis',       0.24));
-  rightHalf.appendChild(makeBtColumn(rightQF,  pos.qf,  'Cuartos',     0.16));
-  rightHalf.appendChild(makeBtColumn(rightOct, pos.oct, 'Octavos',     0.08));
-  rightHalf.appendChild(makeBtColumn(rightR32, pos.r32, 'Ronda de 32', 0));
+  rightHalf.appendChild(makeBtColumn(rightSF,  pos.sf,  'Semis',       0.24, true));
+  rightHalf.appendChild(makeBtColumn(rightQF,  pos.qf,  'Cuartos',     0.16, true));
+  rightHalf.appendChild(makeBtColumn(rightOct, pos.oct, 'Octavos',     0.08, true));
+  rightHalf.appendChild(makeBtColumn(rightR32, pos.r32, 'Ronda de 32', 0,    true));
 
   wrapper.appendChild(leftHalf);
   wrapper.appendChild(center);

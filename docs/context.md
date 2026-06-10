@@ -25,6 +25,7 @@ Single Page Application para visualizar el fixture del FIFA World Cup 2026. Vani
 | Camino de Argentina dinámico | ✅ Completo — panel con estado en localStorage |
 | Carga de resultados reales (`data/results.json`) | ✅ Completo |
 | Tabla de posiciones calculada | ✅ Completo — PJ/G/E/P/GF/GC/Pts desde resultados |
+| Diseño responsive (mobile-first) | ✅ Completo |
 | Clasificación automática al bracket | ⬜ Pendiente |
 | Filtro por equipo / selección | ⬜ Pendiente |
 
@@ -127,6 +128,15 @@ const ARG_MATCHES = [
 - Si todos los partidos pasaron: muestra "Fase Eliminatoria / Grupos completados ✓"
 - Los `:` separadores parpadean con `@keyframes sepBlink`
 - **Responsive:** se oculta en `< 420px`; se centra en `< 860px`; el logo se oculta en `< 860px`
+
+**Breakpoints del header:**
+
+| Ancho | Comportamiento |
+|---|---|
+| > 860px | 3 columnas completas (logo + centro + countdown) |
+| ≤ 860px | Logo oculto; countdown inline centrado |
+| ≤ 600px | Header apilado verticalmente (`flex-direction: column`), padding reducido |
+| ≤ 420px | Countdown oculto; solo centro; título con `clamp` más pequeño |
 
 ---
 
@@ -232,6 +242,14 @@ function parseMatchUTC(dateStr, timeStr) {
 
 Cards con ciudad + nombre del estadio, deduplicadas por ciudad.
 
+### Responsive de grupos
+
+| Breakpoint | Cambio |
+|---|---|
+| ≤ 700px | `.detail-top-row` apila columnas verticalmente; `border-right` → `border-bottom` |
+| ≤ 700px | `.detail-matches .match-info` pasa a `flex-wrap: wrap`; sedes en columna |
+| ≤ 500px | Columna GC oculta en tabla de posiciones; results bar apilada; pills más pequeñas |
+
 ### Barra de resultados (`.results-bar`)
 
 Aparece arriba del toggle de vistas en la sección Fase de Grupos:
@@ -246,6 +264,140 @@ Aparece arriba del toggle de vistas en la sección Fase de Grupos:
 - Muestra el timestamp del último `updated` en `results.json` (formato local es-AR)
 - El botón llama `refreshResults()` que re-fetcha el JSON y re-renderiza grupos + bracket
 - Durante la carga: el icono del botón gira con `@keyframes spinIcon` (clase `.spinning`)
+
+---
+
+## Bracket — Visual Design (`css/bracket.css`)
+
+### Fondo oscuro de la sección eliminatorias
+
+`#tab-eliminatorias` tiene un fondo navy oscuro con brillo azul:
+
+```css
+#tab-eliminatorias {
+  background:
+    radial-gradient(ellipse at 50% 42%, rgba(0,51,160,0.22) 0%, transparent 58%),
+    linear-gradient(170deg, #0D1B3E 0%, #060E22 100%);
+  border-radius: var(--radius);
+  padding-bottom: 36px;
+  box-shadow: 0 8px 48px rgba(0,0,0,0.35);
+}
+```
+
+Todos los textos secundarios del bracket (`.arg-panel`, `.bt-col-title`, `.bracket-scroll-hint`) tienen overrides para ser legibles sobre este fondo oscuro (colores en blanco semitransparente).
+
+### Cards del bracket (`.bt-match`)
+
+Fondo azul FIFA oscuro con gradiente:
+
+```css
+.bt-match {
+  background: linear-gradient(135deg, #0D2A6E 0%, #091E52 100%);
+  overflow: hidden; /* necesario para clipear el shimmer ::before */
+}
+.bt-label  { background: rgba(0,0,0,0.22); color: rgba(255,255,255,0.38); }
+.bt-team   { color: rgba(255,255,255,0.55); border-bottom: 1px solid rgba(255,255,255,0.07); }
+.bt-date   { color: rgba(255,255,255,0.32); background: rgba(0,0,0,0.18); }
+.bt-match.bt-arg .bt-team { color: var(--arg-blue); }
+```
+
+### Animación shimmer (`.bt-match::before`)
+
+Barrido de luz diagonal que se repite cada 5s. El pseudo-elemento es un gradiente lineal diagonal que viaja de izquierda a derecha (o derecha a izquierda en la mitad derecha del bracket):
+
+```css
+.bt-match::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(105deg,
+    transparent 30%, rgba(255,255,255,0.32) 50%, transparent 70%);
+  transform: translateX(-120%);
+  animation: btCardShimmer 5s ease var(--shimmer-delay, 0.5s) infinite;
+}
+@keyframes btCardShimmer {
+  0%   { transform: translateX(-120%); }
+  13%  { transform: translateX(220%); }
+  100% { transform: translateX(220%); }
+}
+```
+
+- **Delay por columna:** `--shimmer-delay` se setea con `card.style.setProperty('--shimmer-delay', ...)` en `makeBtColumn()`. Las columnas más cercanas al centro del bracket tienen mayor delay, creando efecto de luz que emana del centro.
+- **Dirección RTL para mitad derecha:** la clase `.bt-shimmer-rtl` se agrega vía JS (`if (rtl) card.classList.add('bt-shimmer-rtl')`) y la regla CSS usa `animation-direction: reverse` para invertir el barrido sin duplicar el keyframe.
+- **`overflow: hidden` es crítico:** sin él el pseudo-elemento es visible fuera de la card.
+
+### Tercer y cuarto puesto (`.bt-third-card`)
+
+Estilo dorado oscuro para distinguirlo del bracket estándar:
+
+```css
+.bt-third-title { color: var(--gold-dark); }
+.bt-third-card {
+  background: linear-gradient(135deg, #2C1F00 0%, #1A1200 100%);
+  border: 1.5px solid rgba(201,168,0,0.45);
+  box-shadow: 0 0 14px rgba(201,168,0,0.18);
+}
+.bt-third-card .bt-team { color: rgba(255,215,0,0.62); }
+.bt-third-card .bt-date { color: rgba(255,215,0,0.38); }
+```
+
+### Centro del bracket (`.bt-center` + `.bt-trophy-wrap`)
+
+El trofeo se posiciona al **tope** de la columna central (no centrado verticalmente), para que quede por encima de las cards de los semifinalistas:
+
+```css
+.bt-center {
+  justify-content: flex-start;  /* antes: center */
+  padding: 44px 12px 0;         /* antes: padding-bottom: 200px */
+}
+.bt-trophy-wrap { margin-bottom: 28px; }
+```
+
+**Por qué `margin-bottom: 28px`:** El anillo orbital exterior del trofeo mide 104px. La imagen del trofeo mide 68px. El anillo se extiende `(104-68)/2 = 18px` por debajo del borde de la imagen. Sin margen suficiente, el anillo superpone el texto "LA GRAN FINAL". Con `28px` hay ~10px de clearance visual.
+
+---
+
+## Bracket — Responsive (`css/bracket.css` + `js/render/bracket.js`)
+
+El bracket es inherentemente ancho (4 rondas × 2 lados + centro). El enfoque es **scroll horizontal con momentum**, no una vista alternativa. No se puede mostrar un bracket simétrico de 8 columnas en 390px sin scroll.
+
+### Dimensiones adaptativas (`BT` en `render/bracket.js`)
+
+`BT` es un objeto `let` que se actualiza al inicio de cada `renderBracket()` según `window.innerWidth`:
+
+| Viewport | H (card height) | CW (col width) | Ancho total aprox. |
+|---|---|---|---|
+| ≥ 900px | 90px | 128px | ~1370px |
+| 600–899px | 78px | 110px | ~1160px |
+| < 600px | 68px | 92px | ~990px |
+
+`BT.CG` (gap entre columnas) está definido pero no se usa en JS — el gap real es el CSS `gap` de `.bt-half`, que se ajusta vía media queries.
+
+### Hint de scroll
+
+```html
+<div class="bracket-scroll-hint">
+  <i data-lucide="move-horizontal"></i> Deslizá para ver el bracket completo
+</div>
+```
+
+- Visible en pantallas < 1300px (media query en CSS)
+- Se desvanece automáticamente con `@keyframes hintFade` (4s delay, fade a 0)
+
+### Breakpoints del bracket
+
+| Breakpoint | Cambio |
+|---|---|
+| ≤ 1300px | Hint de scroll visible |
+| ≤ 900px | `.bt-half gap: 14px`; centro 175px; trofeo 56px; botones arg más grandes |
+| ≤ 600px | `.bt-half gap: 8px`; centro 130px; trofeo 44px; anillos orbitales escalados; arg panel apilado verticalmente con botones táctiles (6×12px) |
+
+### Scrolling táctil
+
+`.bracket-wrapper` tiene `-webkit-overflow-scrolling: touch` para momentum scroll en iOS. `.bracket-container` usa `width: max-content` en lugar de `min-width: 1370px` fijo, dejando que el contenido JS controle el ancho real.
+
+### Arg panel en mobile (< 600px)
+
+Los pasos (Grupo J → R32 → Octavos → ...) se apilan verticalmente. Los separadores `›` se ocultan. Los botones pasan a `padding: 6px 12px; font-size: 0.7rem` para cumplir tamaño mínimo táctil recomendado.
 
 ---
 
@@ -360,6 +512,7 @@ CDN: `<script src="https://unpkg.com/lucide@latest"></script>`
 | `zap` | Badge "Próximo" partido |
 | `check-circle` | Grupos completados |
 | `refresh-cw` | Botón Actualizar resultados |
+| `move-horizontal` | Hint de scroll del bracket |
 
 ---
 
@@ -395,6 +548,8 @@ CDN: `<script src="https://unpkg.com/lucide@latest"></script>`
 | `.results-refresh-btn.spinning` | `groups.css` | Icono girando durante el fetch |
 | `.champion-badge` | `groups.css` | Badge ★★★ Campeón |
 | `.bt-arg` | `bracket.css` | Ring celeste en camino de Argentina (aplicado dinámicamente) |
+| `.bt-shimmer-rtl` | `bracket.css` | Shimmer direction reverse en cards de la mitad derecha del bracket |
+| `.bt-third-card` | `bracket.css` | Card 3er/4to puesto con fondo y bordes dorados |
 | `.arg-panel-inner` | `bracket.css` | Panel de seguimiento del camino de Argentina |
 | `.arg-btn` / `.arg-btn-elim` | `bracket.css` | Botones del panel (activo celeste / eliminado rojo) |
 | `.tbd` | `bracket.css` | Slots vacíos del bracket |
@@ -403,6 +558,7 @@ CDN: `<script src="https://unpkg.com/lucide@latest"></script>`
 | `.sede-item` | `groups.css` | Card de ciudad + estadio |
 | `.header-countdown-side` | `layout.css` | Columna derecha del header (centrada) |
 | `.hparticle` | `layout.css` | Partícula dorada flotante |
+| `.bracket-scroll-hint` | `bracket.css` | Hint "deslizá" visible < 1300px, se desvanece con CSS |
 
 ---
 
@@ -456,13 +612,138 @@ CDN: `<script src="https://unpkg.com/lucide@latest"></script>`
 - **Camino de Argentina calculado dinámicamente:** `isArgPath` en los datos ya no se usa para el render. `computeArgIds(state)` devuelve un `Set` de IDs a pintar según posición y resultados guardados en `localStorage` (`arg_bracket`). `applyArgPath()` aplica/quita `.bt-arg` sin re-renderizar el árbol. Ambas rutas confluyen en SF-2.
 - **Resultados estáticos en JSON:** se eligió `data/results.json` como fuente de verdad (sin API) por costo cero, sin rate limits, funcionamiento offline, y control total del dato. El workflow es: editar JSON → push → GitHub Pages. Las APIs de fútbol disponibles (api-football.com, football-data.org) no tenían cobertura confiable del WC 2026 al momento de evaluar.
 - **Cache-busting en fetch:** `loadResults()` agrega `?t=<Date.now()>` a la URL para evitar que el browser sirva el JSON antiguo tras un push.
+- **Bracket responsive sin vista alternativa:** el bracket simétrico de 8 columnas no puede mostrarse sin scroll en pantallas < 1300px. Se optó por scroll horizontal con momentum (`-webkit-overflow-scrolling: touch`) + hint visual que se desvanece, en lugar de un layout alternativo que rompería la simetría visual. Las dimensiones `BT` se reducen por viewport para minimizar el ancho total (~990px en mobile vs ~1370px en desktop).
+- **Tab nav con overflow-x scroll:** en lugar de `flex-wrap` (que causaría línea doble), la barra de tabs usa `overflow-x: auto; scrollbar-width: none` para que se desplace horizontalmente si los botones no caben. En la práctica con 2 tabs siempre caben, pero es a prueba de futuras extensiones.
+- **GC oculta en tabla mobile:** en < 500px se oculta la columna "Goles en contra" de la standings table para que las 8 columnas restantes quepan sin reducir la legibilidad excesivamente.
 
 ---
 
-## Próximos pasos posibles
+## Backlog — Mejoras pendientes
 
-- **Clasificación automática al bracket:** poblar los slots según posiciones finales de grupos
-- **Resultados de eliminatorias:** extender `data/results.json` con el objeto `bracket` (`"R32-1": { "home": 1, "away": 0 }`) y mostrar scores en las cards del bracket
+Organizado por dificultad estimada. Cada ítem está listo para implementar en una sesión nueva.
+
+---
+
+### 🟢 Fácil
+
+#### 1. Ocultar barra de resultados y panel de Argentina (temporalmente)
+
+**Qué:** Ocultar el `#arg-panel` y `.results-bar` hasta que haya más contenido/resultados reales que justifiquen mostrarlos visualmente.
+
+**Cómo:**
+- Opción A (más simple): `display: none` en CSS sobre `#arg-panel` y `.results-bar`.
+- Opción B (más limpia): agregar un flag `SHOW_ARG_PANEL = false` al inicio de `render/bracket.js` y envolver `renderArgPanel()` con un `if`. Ídem para la results bar en `index.html`.
+
+**Archivo/s:** `css/bracket.css` o `js/render/bracket.js` + `index.html`
+
+---
+
+#### 2. Shimmer no arranca al cargar — espera a que el bracket esté visible
+
+**Qué:** El shimmer actualmente empieza con `animation-delay` fijo desde que se renderiza el DOM. Si el usuario está en la pestaña "Fase de Grupos" al cargar, las animaciones del bracket ya se habrán consumido cuando vaya a "Llaves". El shimmer debería comenzar (o reiniciarse) cuando la sección `#tab-eliminatorias` se hace visible.
+
+**Cómo:**
+- En `activateTab()` dentro de `main.js`, cuando se activa `'eliminatorias'`, agregar y quitar una clase `.bt-animate-ready` al `#bracket-container`.
+- En CSS: las animaciones de shimmer solo corren cuando el ancestro tiene `.bt-animate-ready`. Sin la clase, `animation-play-state: paused`.
+- Alternativa más simple: al activar la tab, recalcular y reasignar los `animation-delay` inline para que cuenten desde ese momento (forzar reflow con `void el.offsetHeight`).
+
+**Archivo/s:** `js/main.js`, `css/bracket.css`
+
+---
+
+### 🟡 Medio
+
+#### 3. Centrado vertical del bracket de la Final respecto a las Semis
+
+**Qué:** Al mover `.bt-center` a `justify-content: flex-start` para subir la copa, el bloque entero de la Final quedó demasiado elevado. El card de la Final debería estar centrado verticalmente entre los dos cards de Semi (`SF-1` y `SF-2`), que están posicionados absolutamente en `pos.sf` (el punto medio del bracket completo).
+
+**Cómo:**
+- `pos.sf[0]` es el `midY` del único partido de cada lado. La Final debería estar centrada en ese mismo `midY`. Actualmente el `bt-final-block` sube junto con la copa.
+- Separar el trofeo del card: el `.bt-trophy-wrap` puede tener `position: absolute; top: 0` dentro de `.bt-center`, y el `.bt-final-block` usar `margin-top` calculado en JS para alinearse con `pos.sf[0] - finalCardHeight/2`.
+- O en CSS puro: usar `padding-top` calculado en `.bt-final-block` para que su card quede al nivel correcto, independientemente de la altura del trofeo.
+
+**Archivo/s:** `css/bracket.css`, posiblemente `js/render/bracket.js` para cálculo dinámico del offset
+
+---
+
+#### 4. Scroll vertical indeseado en el bracket en mobile
+
+**Qué:** En mobile, el área del bracket genera scroll vertical dentro del contenedor además del scroll horizontal. Debería usar solo el scroll de la página para el eje Y, y el scroll horizontal del wrapper para el eje X.
+
+**Causa probable:** `.bracket-wrapper` o `.bracket-container` tienen altura fija o `min-height` que, combinado con `overflow-x: auto`, también activa `overflow-y: auto/scroll` en algunos browsers (especialmente Safari/iOS). El `overflow-x: auto` implícitamente establece `overflow-y: auto` si no se especifica lo contrario.
+
+**Cómo:**
+```css
+.bracket-wrapper {
+  overflow-x: auto;
+  overflow-y: visible; /* explícito — evita el scroll Y secundario */
+}
+```
+Si `.bracket-container` tiene `height` fijo, cambiarlo a `height: auto`. Verificar también que ningún ancestro tenga `overflow: hidden` que esté recortando y creando el scroll.
+
+**Archivo/s:** `css/bracket.css`
+
+---
+
+#### 5. Coherencia visual entre Fase de Grupos y Eliminatorias
+
+**Qué:** La sección de grupos usa fondo blanco/gris claro (`--bg`, `--surface`) con cards blancas. El bracket ahora tiene fondo navy oscuro con cards azul FIFA. Hay una discontinuidad visual entre tabs. Evaluar si conviene:
+- a) Oscurecer levemente el fondo de la sección de grupos (no necesariamente tan oscuro como el bracket)
+- b) Agregar un acento de color más FIFA a los headers de grupo (ya tienen el `group.color`, pero podrían tener más brillo)
+- c) Unificar la tipografía y sizing de los badges
+
+**Qué revisar puntualmente:**
+- `.group-header` vs `.bt-col-title` — jerarquía visual
+- Match cards en grupos (`.match-card`) vs bracket cards (`.bt-match`) — grosor de borde, radius, shadows
+- Tabla de posiciones — ¿encaja con el resto del diseño?
+- El panel de controles (toggle vista + pills) — ¿se ve bien junto a la results-bar?
+
+**Archivo/s:** `css/groups.css`, `css/variables.css`
+
+---
+
+### 🔴 Difícil
+
+#### 6. Animación de entrada de cards del bracket (reveal escalonado → shimmer)
+
+**Qué:** Al cargar la sección de eliminatorias, los cards deberían aparecer de a uno (o de a grupos por ronda), de afuera hacia adentro (R32 primero, luego Octavos, Cuartos, Semis, Final). Cuando el último card termine de aparecer, arranca el shimmer.
+
+**Cómo:**
+
+**Fase 1 — Reveal escalonado:**
+- Las cards arrancan con `opacity: 0; transform: translateY(12px)` (o scale).
+- JS agrega la clase `.bt-revealed` a cada card con `setTimeout` escalonado: `delay = roundIndex * 180 + cardIndexInRound * 40` ms.
+- `.bt-revealed { animation: btReveal 0.35s ease forwards; }`
+
+**Fase 2 — Shimmer arranca solo cuando todas las cards están visibles:**
+- En JS, calcular el tiempo total del reveal (último card delay + 350ms de la animación).
+- Usar `setTimeout` para agregar `.bt-shimmer-active` al `#bt-wrapper` cuando ese tiempo pase.
+- En CSS: `animation-play-state: paused` por defecto en `.bt-match::before`; solo corre cuando `.bt-shimmer-active .bt-match::before`.
+
+**Consideración:** el `colDelay` actual es para el shimmer, no para el reveal. Habría que añadir un segundo delay independiente para el reveal, o reemplazar el sistema actual de delay.
+
+**Archivo/s:** `js/render/bracket.js`, `css/bracket.css`
+
+---
+
+#### 7. Revisión del sistema de carga de resultados y posiciones
+
+**Qué:** Revisar la robustez del flujo completo de resultados para cuando haya datos reales. Puntos a evaluar:
+
+- **Orden de renderizado:** si `loadResults()` tarda (GitHub Pages con latencia), la página se muestra por un instante sin resultados. Considerar un skeleton o estado de carga.
+- **Tabla de posiciones con resultados parciales:** `calcStandings()` funciona bien con 0 o 6 resultados, pero con 2 o 3 resultados intermedios el orden de la tabla puede ser incorrecto (criterios de desempate incompletos). FIFA usa criterios adicionales (enfrentamiento directo, fair play) que actualmente no están implementados.
+- **Resultados del bracket:** el objeto `bracket` en `results.json` existe pero no se usa en el render. Habría que mostrar scores en las cards del bracket y aplicar la clase `.match-completed` equivalente.
+- **Actualización automática:** el botón "Actualizar" es manual. Evaluar si conviene un poll automático cada N minutos durante la fase de grupos activa.
+- **Error handling visible:** si el fetch falla, el fallback es silencioso (`window.RESULTS = {}`). Considerar mostrar un mensaje de error en `.results-updated` en lugar de "Sin resultados cargados".
+
+**Archivo/s:** `js/main.js`, `js/render/groups.js`, `js/render/bracket.js`, `data/results.json`
+
+---
+
+### Ideas futuras (sin prioridad)
+
+- **Clasificación automática al bracket:** poblar los slots de `BRACKET` según posiciones finales de grupos una vez completada la fase
 - **Filtro por equipo:** highlight de todos los partidos de un equipo al clickearlo
 - **Dark mode:** toggle con `prefers-color-scheme` + variable override
-- **Verificar 3 sedes pendientes** (Grupo B y Grupo G)
+- **Verificar 3 sedes pendientes** (Grupo B: Suiza vs Canadá; Grupo G: Irán vs Nueva Zelanda, Egipto vs Irán)
+- **Re-render del bracket al rotar pantalla:** listener en `window.resize` con debounce que llame `renderBracket()`

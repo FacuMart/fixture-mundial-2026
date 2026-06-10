@@ -1,7 +1,48 @@
+/* ============================================================ BRACKET SECTION — DARK BACKGROUND */
+#tab-eliminatorias {
+  background:
+    radial-gradient(ellipse at 50% 42%, rgba(0, 51, 160, 0.22) 0%, transparent 58%),
+    linear-gradient(170deg, #0D1B3E 0%, #060E22 100%);
+  border-radius: var(--radius);
+  padding-bottom: 36px;
+  box-shadow: 0 8px 48px rgba(0, 0, 0, 0.35);
+}
+
 /* ============================================================ ARG PANEL */
 #arg-panel {
-  padding: 0 8px 16px;
+  padding: 20px 8px 16px;
 }
+
+#tab-eliminatorias .arg-panel-inner {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(116, 172, 223, 0.22);
+  box-shadow: none;
+}
+#tab-eliminatorias .arg-panel-title { color: rgba(255, 255, 255, 0.85); }
+#tab-eliminatorias .arg-step-label  { color: rgba(255, 255, 255, 0.42); }
+#tab-eliminatorias .arg-step-sep    { color: rgba(255, 255, 255, 0.2); }
+#tab-eliminatorias .arg-btn {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.13);
+  color: rgba(255, 255, 255, 0.48);
+}
+#tab-eliminatorias .arg-btn:hover {
+  border-color: var(--arg-blue);
+  color: var(--arg-blue);
+  background: rgba(116, 172, 223, 0.12);
+}
+#tab-eliminatorias .arg-btn.active {
+  background: var(--arg-blue);
+  border-color: var(--arg-blue);
+  color: #fff;
+}
+#tab-eliminatorias .arg-btn.arg-btn-elim.active {
+  background: #E53E3E;
+  border-color: #E53E3E;
+}
+
+#tab-eliminatorias .bracket-scroll-hint { color: rgba(255, 255, 255, 0.28); }
+#tab-eliminatorias .bt-col-title        { color: rgba(255, 255, 255, 0.28); }
 
 .arg-panel-inner {
   display: flex;
@@ -155,22 +196,22 @@
 .bt-match {
   position: absolute;
   width: 100%;
-  background: var(--surface);
+  background: linear-gradient(135deg, #0D2A6E 0%, #091E52 100%);
   border-radius: var(--radius-sm);
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
   border-left: 3px solid transparent;
   overflow: hidden;
   transition: box-shadow var(--transition), transform var(--transition);
   animation: btMatchEntrance 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 .bt-match:hover {
-  box-shadow: var(--shadow-md);
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.5);
   transform: scale(1.03);
   z-index: 20;
 }
 .bt-match.bt-arg {
   border-left-color: var(--arg-blue);
-  box-shadow: 0 0 0 1.5px var(--arg-blue), var(--shadow-sm);
+  box-shadow: 0 0 0 1.5px var(--arg-blue), 0 2px 10px rgba(0, 0, 0, 0.35);
 }
 /* Halo animado para el camino de Argentina */
 .bt-match.bt-arg::after {
@@ -188,10 +229,10 @@
   font-size: 0.55rem;
   font-weight: 700;
   letter-spacing: 0.08em;
-  color: var(--text-light);
+  color: rgba(255, 255, 255, 0.38);
   text-align: center;
   padding: 2px 0;
-  background: var(--bg);
+  background: rgba(0, 0, 0, 0.22);
   text-transform: uppercase;
 }
 
@@ -202,25 +243,25 @@
   padding: 5px 8px;
   font-size: 0.72rem;
   font-weight: 600;
-  color: var(--text-light);
+  color: rgba(255, 255, 255, 0.55);
   font-style: italic;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .bt-team:last-of-type { border-bottom: none; }
-.bt-team .lucide { width: 0.7rem; height: 0.7rem; flex-shrink: 0; color: var(--text-light); }
-.bt-match.bt-arg .bt-team { color: var(--arg-blue-dk); font-style: normal; }
+.bt-team .lucide { width: 0.7rem; height: 0.7rem; flex-shrink: 0; color: rgba(255, 255, 255, 0.28); }
+.bt-match.bt-arg .bt-team { color: var(--arg-blue); font-style: normal; }
 
 .bt-date {
   display: flex;
   align-items: center;
   gap: 3px;
   font-size: 0.58rem;
-  color: var(--text-muted);
+  color: rgba(255, 255, 255, 0.32);
   padding: 3px 8px;
-  background: var(--bg);
+  background: rgba(0, 0, 0, 0.18);
 }
 .bt-date .lucide { width: 0.6rem; height: 0.6rem; }
 
@@ -231,9 +272,9 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 20px;
-  padding: 28px 12px 0;
+  justify-content: flex-start;
+  gap: 16px;
+  padding: 44px 12px 0;
   align-self: stretch;
   animation: btCenterEntrance 0.6s cubic-bezier(0.22, 1, 0.36, 1) 0.35s both;
 }
@@ -243,7 +284,7 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  margin-bottom: 2px;
+  margin-bottom: 28px;
   position: relative;
 }
 
@@ -383,27 +424,58 @@
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--text-muted);
+  color: var(--gold-dark);
 }
-.bt-third-title .lucide { width: 0.7rem; height: 0.7rem; }
+.bt-third-title .lucide { width: 0.7rem; height: 0.7rem; color: var(--gold-dark); }
 
 .bt-third-card {
-  background: var(--surface);
+  background: linear-gradient(135deg, #2C1F00 0%, #1A1200 100%);
   border-radius: var(--radius-sm);
   overflow: hidden;
-  box-shadow: var(--shadow-sm);
-  border: 1.5px solid var(--gold-dark);
+  box-shadow: 0 0 14px rgba(201, 168, 0, 0.18), 0 2px 10px rgba(0,0,0,0.4);
+  border: 1.5px solid rgba(201, 168, 0, 0.45);
   width: 100%;
 }
 .bt-third-card .bt-team {
-  color: var(--text-muted);
+  color: rgba(255, 215, 0, 0.62);
   font-style: italic;
+  border-bottom-color: rgba(255, 215, 0, 0.1);
+}
+.bt-third-card .bt-team .lucide { color: rgba(255, 215, 0, 0.35); }
+.bt-third-card .bt-date { color: rgba(255, 215, 0, 0.38); }
+
+/* ============================================================ SHIMMER */
+/* Barrido de luz que cruza cada card al entrar — sincronizado con colDelay vía --shimmer-delay */
+.bt-match::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 25%,
+    rgba(255, 255, 255, 0.32) 50%,
+    transparent 75%
+  );
+  animation: btCardShimmer 5s ease var(--shimmer-delay, 0.5s) infinite;
+  pointer-events: none;
+  z-index: 5;
+}
+
+/* Cards de la mitad derecha barren en sentido contrario (de derecha a izquierda) */
+.bt-match.bt-shimmer-rtl::before {
+  animation-direction: reverse;
 }
 
 /* ============================================================ ANIMATIONS */
 @keyframes btMatchEntrance {
   from { opacity: 0; transform: translateY(10px) scale(0.96); }
   to   { opacity: 1; transform: translateY(0)   scale(1); }
+}
+
+@keyframes btCardShimmer {
+  0%   { transform: translateX(-120%); }
+  13%  { transform: translateX(220%); }
+  100% { transform: translateX(220%); }
 }
 
 @keyframes btCenterEntrance {
