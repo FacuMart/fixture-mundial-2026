@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "WebFetch(domain:en.wikipedia.org)",
+      "WebFetch(domain:www.fifa.com)",
+      "WebFetch(domain:www.foxsports.com)",
+      "WebFetch(domain:www.latintimes.com)",
+      "WebFetch(domain:sports.yahoo.com)",
+      "WebFetch(domain:www.nbcsports.com)",
+      "WebFetch(domain:www.espn.com)",
+      "WebFetch(domain:www.olympics.com)"
+    ]
+  }
+}

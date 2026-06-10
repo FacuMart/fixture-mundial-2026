@@ -1,0 +1,50 @@
+/* ============================================================
+   DESIGN TOKENS
+   Paleta: azul FIFA #0033A0, dorado #FFD700, blanco, gris claro
+   Tipografía: system-stack pesada en headers, legible en body
+   ============================================================ */
+:root {
+  --fifa-blue:    #0033A0;
+  --fifa-blue-2:  #0050C8;
+  --gold:         #FFD700;
+  --gold-dark:    #C9A800;
+  --bg:           #F5F7FA;
+  --surface:      #FFFFFF;
+  --border:       #E2E8F0;
+  --text-main:    #1A202C;
+  --text-muted:   #718096;
+  --text-light:   #A0AEC0;
+  --arg-blue:     #74ACDF;
+  --arg-blue-dk:  #4A8FC0;
+  --arg-accent:   rgba(116,172,223,0.15);
+  --shadow-sm:    0 2px 8px rgba(0,0,0,0.08);
+  --shadow-md:    0 6px 24px rgba(0,0,0,0.12);
+  --shadow-hover: 0 10px 36px rgba(0,51,160,0.18);
+  --radius:       12px;
+  --radius-sm:    8px;
+  --transition:   0.22s ease;
+}
+
+/* Lucide icons — alineación y tamaño coherente con el texto */
+.lucide {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  vertical-align: -0.14em;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: none;
+  flex-shrink: 0;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text-main);
+  min-height: 100vh;
+  line-height: 1.5;
+}

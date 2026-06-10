@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FIFA World Cup 2026 — Fixture Interactivo</title>
+
+  <link rel="icon" href="assets/tournaments_fifa-world-cup-2026.football-logos.cc.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="assets/tournaments_fifa-world-cup-2026.football-logos.cc.svg">
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flag-icons@7.2.3/css/flag-icons.min.css">
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/groups.css">
+  <link rel="stylesheet" href="css/bracket.css">
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="header-particles" id="header-particles"></div>
+
+    <div class="header-inner">
+      <div class="header-logo-side">
+        <img class="header-logo" src="assets/tournaments_fifa-world-cup-2026.football-logos.cc.svg" alt="FIFA World Cup 2026">
+      </div>
+
+      <div class="header-center">
+        <div class="header-hosts">
+          <span class="fi fi-us"></span>
+          <span class="fi fi-ca"></span>
+          <span class="fi fi-mx"></span>
+        </div>
+        <h1 class="header-title">FIFA <span>WORLD CUP</span><br>2026</h1>
+        <p class="header-sub">Estados Unidos &nbsp;·&nbsp; Canadá &nbsp;·&nbsp; México</p>
+        <div class="header-badge">
+          <i data-lucide="circle-dot"></i>
+          48 Equipos &nbsp;·&nbsp; 104 Partidos &nbsp;·&nbsp; 16 Ciudades Sede
+        </div>
+      </div>
+
+      <div class="header-countdown-side">
+        <div class="countdown-label">Próximo · Argentina</div>
+        <div class="countdown-match" id="countdown-match">—</div>
+        <div class="countdown-info" id="countdown-info"></div>
+        <div class="countdown-digits" id="countdown-digits">
+          <div class="countdown-unit">
+            <div class="countdown-number" id="cd-days">--</div>
+            <div class="countdown-unit-label">días</div>
+          </div>
+          <div class="countdown-sep">:</div>
+          <div class="countdown-unit">
+            <div class="countdown-number" id="cd-hours">--</div>
+            <div class="countdown-unit-label">horas</div>
+          </div>
+          <div class="countdown-sep">:</div>
+          <div class="countdown-unit">
+            <div class="countdown-number" id="cd-mins">--</div>
+            <div class="countdown-unit-label">min</div>
+          </div>
+          <div class="countdown-sep">:</div>
+          <div class="countdown-unit">
+            <div class="countdown-number" id="cd-secs">--</div>
+            <div class="countdown-unit-label">seg</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <nav class="tab-nav" aria-label="Navegación del fixture">
+    <button class="tab-btn active" data-tab="grupos" type="button">
+      <i data-lucide="layout-grid"></i> Fase de Grupos
+    </button>
+    <button class="tab-btn" data-tab="eliminatorias" type="button">
+      <i data-lucide="trophy"></i> Llaves
+    </button>
+  </nav>
+
+  <main>
+    <section id="tab-grupos" class="section active">
+      <div class="groups-controls">
+        <div class="view-toggle">
+          <button class="view-btn active" data-view="general" type="button">
+            <i data-lucide="layout-grid"></i> Todos los grupos
+          </button>
+          <button class="view-btn" data-view="individual" type="button">
+            <i data-lucide="zoom-in"></i> Por grupo
+          </button>
+        </div>
+        <div class="group-selector" id="group-selector" hidden></div>
+      </div>
+      <div class="groups-grid" id="groups-grid"></div>
+    </section>
+
+    <section id="tab-eliminatorias" class="section">
+      <div id="arg-panel"></div>
+      <div class="bracket-wrapper">
+        <div class="bracket-container" id="bracket-container"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="footer-stats">
+      <div class="footer-stat"><strong>48</strong><span>Equipos</span></div>
+      <div class="footer-stat"><strong>104</strong><span>Partidos</span></div>
+      <div class="footer-stat"><strong>16</strong><span>Ciudades</span></div>
+      <div class="footer-stat"><strong>3</strong><span>Países anfitriones</span></div>
+      <div class="footer-stat"><strong>39 días</strong><span>11 jun – 19 jul</span></div>
+    </div>
+    <p>FIFA World Cup 2026 · Fixture interactivo de visualización · Datos oficiales FIFA</p>
+  </footer>
+
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="js/header.js"></script>
+  <script src="js/data/groups.js"></script>
+  <script src="js/data/bracket.js"></script>
+  <script src="js/render/groups.js"></script>
+  <script src="js/render/bracket.js"></script>
+  <script src="js/main.js"></script>
+
+</body>
+</html>

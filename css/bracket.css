@@ -1,0 +1,384 @@
+/* ============================================================ ARG PANEL */
+#arg-panel {
+  padding: 0 8px 16px;
+}
+
+.arg-panel-inner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  background: var(--surface);
+  border: 1.5px solid rgba(116, 172, 223, 0.35);
+  border-radius: var(--radius);
+  padding: 9px 14px;
+  box-shadow: var(--shadow-sm);
+}
+
+.arg-panel-title {
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--arg-blue-dk);
+  margin-right: 4px;
+  flex-shrink: 0;
+}
+
+.arg-step {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.arg-step-label {
+  font-size: 0.62rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.arg-step-sep {
+  color: var(--text-light);
+  font-size: 0.8rem;
+  padding: 0 2px;
+  flex-shrink: 0;
+}
+
+.arg-btn {
+  font-size: 0.6rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 20px;
+  border: 1.5px solid var(--border);
+  background: var(--bg);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all var(--transition);
+  white-space: nowrap;
+  line-height: 1.4;
+}
+
+.arg-btn:hover {
+  border-color: var(--arg-blue);
+  color: var(--arg-blue-dk);
+  background: rgba(116, 172, 223, 0.08);
+}
+
+.arg-btn.active {
+  background: var(--arg-blue);
+  border-color: var(--arg-blue);
+  color: #fff;
+}
+
+.arg-btn.arg-btn-elim.active {
+  background: #E53E3E;
+  border-color: #E53E3E;
+  color: #fff;
+}
+
+/* ============================================================ BRACKET WRAPPER */
+.bracket-wrapper {
+  overflow-x: auto;
+  padding: 8px 0 24px;
+}
+
+.bracket-container {
+  min-width: 1370px;
+  padding: 0 8px;
+}
+
+/* ============================================================ ÁRBOL SIMÉTRICO */
+.bt-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+}
+
+
+/* ============================================================ MITADES */
+.bt-half {
+  display: flex;
+  align-items: flex-start;
+  gap: 22px;
+  flex-shrink: 0;
+  padding-top: 28px; /* espacio para los títulos de columna */
+}
+
+.bt-col-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  position: relative;
+}
+
+.bt-col-title {
+  position: absolute;
+  left: 0; right: 0;
+  text-align: center;
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-light);
+  white-space: nowrap;
+}
+
+.bt-col {
+  position: relative;
+  flex-shrink: 0;
+}
+
+/* ============================================================ MATCH CARD */
+.bt-match {
+  position: absolute;
+  width: 100%;
+  background: var(--surface);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-sm);
+  border-left: 3px solid transparent;
+  overflow: hidden;
+  transition: box-shadow var(--transition), transform var(--transition);
+  animation: btMatchEntrance 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.bt-match:hover {
+  box-shadow: var(--shadow-md);
+  transform: scale(1.03);
+  z-index: 20;
+}
+.bt-match.bt-arg {
+  border-left-color: var(--arg-blue);
+  box-shadow: 0 0 0 1.5px var(--arg-blue), var(--shadow-sm);
+}
+/* Halo animado para el camino de Argentina */
+.bt-match.bt-arg::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  border: 2px solid var(--arg-blue);
+  opacity: 0;
+  animation: btArgGlowRing 3s ease-in-out 1s infinite;
+  pointer-events: none;
+}
+
+.bt-label {
+  font-size: 0.55rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--text-light);
+  text-align: center;
+  padding: 2px 0;
+  background: var(--bg);
+  text-transform: uppercase;
+}
+
+.bt-team {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 8px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-light);
+  font-style: italic;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.bt-team:last-of-type { border-bottom: none; }
+.bt-team .lucide { width: 0.7rem; height: 0.7rem; flex-shrink: 0; color: var(--text-light); }
+.bt-match.bt-arg .bt-team { color: var(--arg-blue-dk); font-style: normal; }
+
+.bt-date {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.58rem;
+  color: var(--text-muted);
+  padding: 3px 8px;
+  background: var(--bg);
+}
+.bt-date .lucide { width: 0.6rem; height: 0.6rem; }
+
+/* ============================================================ CENTRO */
+.bt-center {
+  flex-shrink: 0;
+  width: 210px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  padding: 28px 12px 0;
+  align-self: stretch;
+  animation: btCenterEntrance 0.6s cubic-bezier(0.22, 1, 0.36, 1) 0.35s both;
+}
+
+/* Copa del mundo */
+.bt-trophy-wrap {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 2px;
+}
+.bt-trophy-img {
+  width: 68px;
+  height: auto;
+  animation: btTrophyFloat 3.2s ease-in-out infinite, btTrophyGlow 3.2s ease-in-out infinite;
+}
+
+/* Final */
+.bt-final-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.bt-final-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--gold-dark);
+}
+.bt-final-title .lucide { width: 0.75rem; height: 0.75rem; }
+
+.bt-final-card {
+  background: linear-gradient(135deg, var(--fifa-blue), var(--fifa-blue-2));
+  background-size: 200% 200%;
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+  width: 100%;
+  animation: btFinalGradient 6s ease-in-out infinite, btFinalGlow 4s ease-in-out 0.5s infinite;
+  transition: box-shadow var(--transition);
+}
+.bt-final-card:hover { box-shadow: var(--shadow-hover); }
+
+.bt-final-team {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 13px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: rgba(255,255,255,0.45);
+  font-style: italic;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+.bt-final-team:last-of-type { border-bottom: none; }
+.bt-final-team .lucide { width: 0.75rem; height: 0.75rem; flex-shrink: 0; }
+
+.bt-final-meta {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.62rem;
+  color: rgba(255,255,255,0.5);
+  padding: 4px 13px;
+  background: rgba(0,0,0,0.15);
+}
+.bt-final-meta .lucide { width: 0.65rem; height: 0.65rem; }
+.bt-final-meta:first-of-type { padding-top: 6px; }
+.bt-final-meta:last-child { padding-bottom: 6px; }
+
+.bt-champion {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--gold-dark);
+  background: rgba(255,215,0,0.12);
+  padding: 5px 14px;
+  border-radius: 20px;
+  border: 1px solid rgba(255,215,0,0.3);
+  animation: btChampionPulse 2.5s ease-in-out 1s infinite;
+}
+.bt-champion .lucide { width: 0.8rem; height: 0.8rem; }
+
+/* 3er puesto */
+.bt-third-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.bt-third-title {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.bt-third-title .lucide { width: 0.7rem; height: 0.7rem; }
+
+.bt-third-card {
+  background: var(--surface);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  border: 1.5px solid var(--gold-dark);
+  width: 100%;
+}
+.bt-third-card .bt-team {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* ============================================================ ANIMATIONS */
+@keyframes btMatchEntrance {
+  from { opacity: 0; transform: translateY(10px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0)   scale(1); }
+}
+
+@keyframes btCenterEntrance {
+  from { opacity: 0; transform: scale(0.9); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes btArgGlowRing {
+  0%, 100% { opacity: 0;   transform: scale(1); }
+  50%       { opacity: 0.55; transform: scale(1.025); }
+}
+
+@keyframes btFinalGradient {
+  0%   { background-position: 0%   50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0%   50%; }
+}
+
+@keyframes btFinalGlow {
+  0%, 100% { box-shadow: var(--shadow-md); }
+  50%       { box-shadow: 0 0 28px rgba(255,215,0,0.18), 0 8px 24px rgba(0,0,0,0.3); }
+}
+
+@keyframes btChampionPulse {
+  0%, 100% { box-shadow: none; }
+  50%       { box-shadow: 0 0 14px rgba(255,215,0,0.35); }
+}
+
+@keyframes btTrophyFloat {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-8px); }
+}
+
+@keyframes btTrophyGlow {
+  0%, 100% { filter: drop-shadow(0 2px 6px rgba(255,215,0,0.45)); }
+  50%       { filter: drop-shadow(0 4px 18px rgba(255,215,0,0.85)) drop-shadow(0 0 32px rgba(255,215,0,0.3)); }
+}
