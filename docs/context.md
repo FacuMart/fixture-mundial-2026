@@ -4,6 +4,9 @@
 
 Single Page Application para visualizar el fixture del FIFA World Cup 2026. Vanilla JS + CSS moderno, sin frameworks ni build step. Datos hardcodeados, pensado para extender con carga de resultados.
 
+**Repo:** https://github.com/FacuMart/fixture-mundial-2026
+**GitHub Pages:** https://facumart.github.io/fixture-mundial-2026/
+
 ---
 
 ## Estado actual
