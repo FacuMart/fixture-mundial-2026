@@ -100,6 +100,7 @@ HTML:
 | Sweep de luz diagonal | `::after` con `@keyframes headerSweep` (8s) |
 | 30 partículas doradas ascendentes | JS en `header.js` crea `<div class="hparticle">` con posición/tamaño/delay random; `@keyframes particleRise` |
 | Logo: entrada spring | `cubic-bezier(0.34,1.56,0.64,1)` — overshoot suave |
+| Trofeo: anillos orbitales | `::before` (trazos punteados, 10s CW) + `::after` (dos arcos, 6s CCW) en `.bt-trophy-wrap`; el trofeo flota dentro con z-index 1 |
 | Logo: flotación loop | `@keyframes logoFloat` (5s, ±7px vertical) |
 | Logo: hover glow | `filter: drop-shadow` dorado intenso en `:hover` |
 | "WORLD CUP": shimmer | `background-clip: text` + `-webkit-text-fill-color: transparent` + `@keyframes titleShimmer` (4s) |
@@ -395,6 +396,19 @@ CDN: `<script src="https://unpkg.com/lucide@latest"></script>`
 - **Hash de URL para persistencia de pestaña:** `location.hash` guarda la pestaña activa (`#grupos` / `#eliminatorias`). Al cargar, `main.js` lee el hash y restaura la pestaña sin animación. El botón Atrás del navegador también navega entre pestañas.
 - **`mundial2026.html` preservado:** backup del archivo monolítico original.
 - **Camino de Argentina calculado dinámicamente:** `isArgPath` en los datos ya no se usa para el render. `computeArgIds(state)` devuelve un `Set` de IDs a pintar según posición y resultados guardados en `localStorage` (`arg_bracket`). `applyArgPath()` aplica/quita `.bt-arg` sin re-renderizar el árbol. Ambas rutas confluyen en SF-2.
+
+---
+
+## Carga automática de resultados — opciones evaluadas
+
+| Opción | Viabilidad | Detalle |
+|---|---|---|
+| **api-football.com** (RapidAPI) | ✅ Mejor opción | CORS habilitado, tier gratuito 100 req/día, cubre FIFA World Cup. Requiere API key |
+| **football-data.org** | ✅ Alternativa | Gratuito con registro, CORS habilitado. Cobertura de WC 2026 puede demorar |
+| Scraping directo FIFA/ESPN | ❌ No viable | CORS bloquea requests desde el browser sin backend |
+| APIs no oficiales (SofaScore) | ⚠️ Inestable | Sin garantías de continuidad |
+
+Pendiente de implementar: fetch al cargar la página, mapeo de resultados al formato de `GROUPS`/`BRACKET`, guardado en `localStorage` como caché.
 
 ---
 

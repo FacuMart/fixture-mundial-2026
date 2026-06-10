@@ -222,11 +222,50 @@
 .bt-trophy-wrap {
   display: flex;
   justify-content: center;
+  align-items: center;
   margin-bottom: 2px;
+  position: relative;
 }
+
+/* Anillo exterior — trazos punteados, giro horario lento */
+.bt-trophy-wrap::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 104px;
+  height: 104px;
+  margin-left: -52px;
+  margin-top: -52px;
+  border-radius: 50%;
+  border: 1.5px dashed rgba(255, 215, 0, 0.4);
+  animation: trophyOrbitCW 10s linear infinite;
+  pointer-events: none;
+}
+
+/* Anillo interior — dos arcos, giro antihorario más rápido */
+.bt-trophy-wrap::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 84px;
+  height: 84px;
+  margin-left: -42px;
+  margin-top: -42px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  border-top-color: rgba(255, 215, 0, 0.65);
+  border-bottom-color: rgba(255, 215, 0, 0.65);
+  animation: trophyOrbitCCW 6s linear infinite;
+  pointer-events: none;
+}
+
 .bt-trophy-img {
   width: 68px;
   height: auto;
+  position: relative;
+  z-index: 1;
   animation: btTrophyFloat 3.2s ease-in-out infinite, btTrophyGlow 3.2s ease-in-out infinite;
 }
 
@@ -376,6 +415,16 @@
 @keyframes btTrophyFloat {
   0%, 100% { transform: translateY(0); }
   50%       { transform: translateY(-8px); }
+}
+
+@keyframes trophyOrbitCW {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+@keyframes trophyOrbitCCW {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(-360deg); }
 }
 
 @keyframes btTrophyGlow {
