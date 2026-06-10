@@ -387,6 +387,59 @@
 .sede-city    { display: block; font-size: 0.82rem; font-weight: 700; color: var(--text-main); }
 .sede-stadium { display: block; font-size: 0.68rem; color: var(--text-muted); margin-top: 2px; }
 
+/* ============================================================ RESULTS BAR */
+.results-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 12px;
+  margin-bottom: 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.results-refresh-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  border: 1.5px solid var(--border);
+  border-radius: 20px;
+  background: var(--bg);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all var(--transition);
+  flex-shrink: 0;
+}
+.results-refresh-btn:hover {
+  border-color: var(--fifa-blue);
+  color: var(--fifa-blue);
+}
+.results-refresh-btn.spinning .lucide {
+  animation: spinIcon 0.7s linear infinite;
+}
+
+/* Completed match score */
+.match-score.completed {
+  font-weight: 800;
+  font-style: normal;
+  color: var(--text-main);
+  letter-spacing: 0.04em;
+}
+
+/* Completed match card — subtle muted look */
+.match-card.match-completed {
+  opacity: 0.82;
+}
+.match-card.match-completed .match-team {
+  color: var(--text-muted);
+}
+
 /* ============================================================ ANIMATIONS */
 @keyframes cardEntrance {
   from { opacity: 0; transform: translateY(14px) scale(0.97); }
@@ -407,4 +460,8 @@
 @keyframes livePulseSm {
   0%, 100% { transform: scale(1); opacity: 1; }
   50%       { transform: scale(1.7); opacity: 0.4; }
+}
+@keyframes spinIcon {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
 }

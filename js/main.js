@@ -30,19 +30,50 @@ function activateTab(tabName, animate) {
   }
 }
 
-document.querySelectorAll('.tab-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    location.hash = btn.dataset.tab;
-    activateTab(btn.dataset.tab, true);
+async function loadResults() {
+  try {
+    const res = await fetch('data/results.json?t=' + Date.now());
+    window.RESULTS = await res.json();
+  } catch (_) {
+    window.RESULTS = { updated: null, groups: {}, bracket: {} };
+  }
+  const el = document.getElementById('results-updated');
+  if (el) {
+    const ts = window.RESULTS.updated;
+    el.textContent = ts
+      ? 'Actualizado: ' + new Date(ts).toLocaleString('es-AR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })
+      : 'Sin resultados cargados';
+  }
+}
+
+async function refreshResults() {
+  const btn = document.getElementById('refresh-btn');
+  if (btn) btn.classList.add('spinning');
+  await loadResults();
+  renderGroups();
+  renderBracket();
+  lucide.createIcons();
+  if (btn) btn.classList.remove('spinning');
+}
+
+(async function init() {
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      location.hash = btn.dataset.tab;
+      activateTab(btn.dataset.tab, true);
+    });
   });
-});
 
-renderGroups();
-renderBracket();
-initGroupControls();
-lucide.createIcons();
+  document.getElementById('refresh-btn')?.addEventListener('click', refreshResults);
 
-const initialTab = ['grupos', 'eliminatorias'].includes(location.hash.slice(1))
-  ? location.hash.slice(1)
-  : 'grupos';
-activateTab(initialTab, false);
+  await loadResults();
+  renderGroups();
+  renderBracket();
+  initGroupControls();
+  lucide.createIcons();
+
+  const initialTab = ['grupos', 'eliminatorias'].includes(location.hash.slice(1))
+    ? location.hash.slice(1)
+    : 'grupos';
+  activateTab(initialTab, false);
+})();

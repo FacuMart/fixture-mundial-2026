@@ -2,7 +2,7 @@
 
 ## Qué es
 
-Single Page Application para visualizar el fixture del FIFA World Cup 2026. Vanilla JS + CSS moderno, sin frameworks ni build step. Datos hardcodeados, pensado para extender con carga de resultados.
+Single Page Application para visualizar el fixture del FIFA World Cup 2026. Vanilla JS + CSS moderno, sin frameworks ni build step. Datos hardcodeados + resultados en `data/results.json`.
 
 **Repo:** https://github.com/FacuMart/fixture-mundial-2026
 **GitHub Pages:** https://facumart.github.io/fixture-mundial-2026/
@@ -23,8 +23,8 @@ Single Page Application para visualizar el fixture del FIFA World Cup 2026. Vani
 | Fase de Grupos — vista individual por grupo | ✅ Completo |
 | Bracket de Eliminatorias (visualización) | ✅ Completo — sin líneas conectoras, ver nota ⚠️ |
 | Camino de Argentina dinámico | ✅ Completo — panel con estado en localStorage |
-| Carga de resultados reales | ⬜ Pendiente |
-| Tabla de posiciones calculada | ⬜ Pendiente (estructura estática ya visible) |
+| Carga de resultados reales (`data/results.json`) | ✅ Completo |
+| Tabla de posiciones calculada | ✅ Completo — PJ/G/E/P/GF/GC/Pts desde resultados |
 | Clasificación automática al bracket | ⬜ Pendiente |
 | Filtro por equipo / selección | ⬜ Pendiente |
 
@@ -44,17 +44,19 @@ fixture-mundial-2026/
 ├── css/
 │   ├── variables.css           ← design tokens (:root), regla .lucide, reset, body
 │   ├── layout.css              ← header (3 columnas, partículas, countdown), nav, footer, animaciones
-│   ├── groups.css              ← vista general y detalle de grupos; tabla de posiciones; sedes
+│   ├── groups.css              ← vista general y detalle de grupos; tabla de posiciones; sedes; results bar
 │   └── bracket.css             ← bracket eliminatorias, final, 3er puesto
 ├── js/
 │   ├── data/
 │   │   ├── groups.js           ← constante GROUPS (12 grupos, 48 equipos, 72 partidos)
 │   │   └── bracket.js          ← constante BRACKET (ronda32 → octavos → cuartos → semis → final)
 │   ├── render/
-│   │   ├── groups.js           ← makeGroupCard() + makeGroupDetail() + renderGroups() + initGroupControls()
+│   │   ├── groups.js           ← makeGroupCard() + makeGroupDetail() + renderGroups() + initGroupControls() + calcStandings()
 │   │   └── bracket.js          ← renderBracket()
 │   ├── header.js               ← initParticles() + initCountdown() (partículas y countdown Argentina)
-│   └── main.js                 ← navegación por tabs + render inicial + lucide.createIcons()
+│   └── main.js                 ← async init + loadResults() + refreshResults() + activateTab() + lucide.createIcons()
+├── data/
+│   └── results.json            ← fuente de verdad de resultados (se edita manualmente y se pushea)
 ├── docs/
 │   └── context.md              ← este archivo
 └── mundial2026.html            ← archivo original monolítico (backup de referencia)
@@ -63,7 +65,7 @@ fixture-mundial-2026/
 **Orden de carga de scripts en `index.html`:**
 `lucide CDN` → `header.js` → `data/groups.js` → `data/bracket.js` → `render/groups.js` → `render/bracket.js` → `main.js`
 
-`header.js` se carga primero porque no depende de ninguna constante de datos y puede inicializar las partículas y el countdown de inmediato. Sin módulos ES para mantener compatibilidad con apertura directa en el navegador.
+`header.js` se carga primero porque no depende de ninguna constante de datos. `main.js` es un async IIFE que espera `loadResults()` antes de renderizar. Sin módulos ES para mantener compatibilidad con apertura directa en el navegador (en file:// el fetch falla silenciosamente y se usan resultados vacíos como fallback).
 
 ---
 
@@ -142,12 +144,49 @@ El toggle y los pills son generados y gestionados por `initGroupControls()`. Est
 
 Cada pill muestra el color del grupo cuando está activa (inline style). `lucide.createIcons()` se llama después de cada cambio de vista para procesar los nuevos `data-lucide`.
 
+### Sistema de resultados
+
+`data/results.json` es la fuente de verdad. Estructura:
+
+```json
+{
+  "updated": "2026-06-11T20:30:00Z",
+  "groups": {
+    "A-0": { "home": 2, "away": 1 },
+    "A-1": { "home": 0, "away": 0 }
+  },
+  "bracket": {}
+}
+```
+
+- La clave es `"<letra>-<índice>"` donde el índice es la posición del partido en `group.matches` (0–5).
+- Para agregar un resultado: editar el JSON y hacer push a GitHub. En el site, el usuario puede pulsar "Actualizar" para refrescar sin recargar la página.
+
+**Funciones clave en `render/groups.js`:**
+
+```js
+function getResult(letter, index) {
+  return (window.RESULTS?.groups || {})[`${letter}-${index}`] ?? null;
+}
+
+function calcStandings(letter, group) {
+  // Calcula PJ/G/E/P/GF/GC/Pts para cada equipo del grupo
+  // a partir de los resultados disponibles en window.RESULTS
+  // Ordena por: Pts → DG → GF
+  // Devuelve array de equipos ordenados (misma forma que group.teams + stats)
+}
+```
+
+**`window.RESULTS`** se carga en `main.js` con `loadResults()` antes del primer render. Los renders de grupos leen de ahí directamente — no hay estado adicional.
+
 ### Vista general — `makeGroupCard(letter, group)`
 
 Tarjeta compacta con:
 1. `.group-header` — gradiente con `group.color`
 2. `.group-teams` — lista de 4 equipos con flags y badge campeón
-3. `.group-matches` — 6 `.match-card`, con clase `argentina-match` si aplica
+3. `.group-matches` — 6 `.match-card` con score real si existe, o `– : –`
+
+Partidos con resultado: clase `.match-completed` (opacidad 0.82, equipo en `text-muted`) + `.match-score.completed` (score en bold).
 
 **Efecto:** `@keyframes cardEntrance` (fade + scale desde 0.97) con `animation-delay` escalonado de 45ms por card (la A sale primero, la L última).
 
@@ -163,10 +202,11 @@ Panel expandido (max-width 780px, centrado) con 4 secciones:
 
 | Columna izquierda | Columna derecha |
 |---|---|
-| **Equipos** — flags + nombres (fila de Argentina con fondo celeste) | **Clasificación** — tabla PJ/G/E/P/GF/GC/Pts |
+| **Equipos** — flags + nombres (fila de Argentina con fondo celeste) | **Clasificación** — tabla PJ/G/E/P/GF/GC/Pts calculada con `calcStandings()` |
 
 Tabla de posiciones:
-- Estructura estática (todo en 0 hasta que se carguen resultados)
+- Usa `calcStandings(letter, group)` — datos reales si hay resultados, ceros si no
+- El orden de filas refleja la tabla real (mejor pts primero), no el orden del sorteo
 - Posiciones 1 y 2 tienen número en círculo azul FIFA (`.pos-qualifies`)
 - Fila de Argentina con fondo celeste (`var(--arg-accent)`)
 - Nota "Los 2 primeros clasifican" con icono `arrow-up-circle` verde
@@ -183,26 +223,39 @@ function parseMatchUTC(dateStr, timeStr) {
 }
 ```
 
-- **Próximo partido:** borde dorado + fondo cálido + badge `⚡ Próximo` parpadeante (`.next-match`)
-- **En vivo** (dentro de las 2h del inicio): badge `● EN JUEGO` con punto rojo pulsante (`.live-match`)
+- **Completado:** `.match-completed` + score en bold — no puede ser "próximo"
+- **Próximo partido:** borde dorado + fondo cálido + badge `⚡ Próximo` parpadeante (`.next-match`) — solo si sin resultado y aún no jugado
+- **En vivo** (dentro de las 2h del inicio, sin resultado): badge `● EN JUEGO` con punto rojo pulsante (`.live-match`)
 - Los partidos de Argentina mantienen el borde y fondo celeste (`.argentina-match`)
 
 **4. Sedes del grupo**
 
-Cards con ciudad + nombre del estadio, deduplicadas por ciudad (cada ciudad aparece una vez aunque tenga múltiples partidos):
+Cards con ciudad + nombre del estadio, deduplicadas por ciudad.
 
-```js
-const seen = new Set();
-group.matches.forEach(m => {
-  if (seen.has(m.city)) return;
-  seen.add(m.city);
-  // render sede-item
-});
+### Barra de resultados (`.results-bar`)
+
+Aparece arriba del toggle de vistas en la sección Fase de Grupos:
+
+```html
+<div class="results-bar">
+  <span id="results-updated">Cargando resultados…</span>
+  <button id="refresh-btn"><i data-lucide="refresh-cw"></i> Actualizar</button>
+</div>
 ```
 
-Ejemplo Grupo J: Kansas City (Arrowhead), Santa Clara (Levi's), Arlington (AT&T).
+- Muestra el timestamp del último `updated` en `results.json` (formato local es-AR)
+- El botón llama `refreshResults()` que re-fetcha el JSON y re-renderiza grupos + bracket
+- Durante la carga: el icono del botón gira con `@keyframes spinIcon` (clase `.spinning`)
 
-**Efecto de entrada:** `@keyframes detailEntrance` — fade + slide-up al cambiar de grupo.
+---
+
+## Flujo de actualización de resultados
+
+1. Partido termina → editar `data/results.json` con la nueva clave `"X-N": { "home": a, "away": b }`
+2. Actualizar el campo `"updated"` al timestamp actual
+3. `git add data/results.json && git commit -m "resultados" && git push`
+4. GitHub Pages actualiza en ~1 min
+5. El usuario pulsa "Actualizar" en el site (o recarga) — `loadResults()` hace `fetch('data/results.json?t=<now>')` con cache-busting
 
 ---
 
@@ -284,7 +337,7 @@ El campo `flag` en `js/data/groups.js` almacena el código ISO (no el emoji).
 
 CDN: `<script src="https://unpkg.com/lucide@latest"></script>`
 
-`lucide.createIcons()` se llama en `main.js` después del render inicial, y en `initGroupControls()` después de cada cambio de vista (para procesar los nuevos nodos del DOM).
+`lucide.createIcons()` se llama en `main.js` después del render inicial, en `initGroupControls()` después de cada cambio de vista, y en `refreshResults()` tras re-renderizar.
 
 **Mapa de iconos:**
 
@@ -295,7 +348,7 @@ CDN: `<script src="https://unpkg.com/lucide@latest"></script>`
 | `zoom-in` | Toggle vista por grupo |
 | `trophy` | Tab eliminatorias, encabezado Final |
 | `star` | Badge campeón Argentina (×3) |
-| `flag` | Fallback bandera de equipo (cuando no se encuentra el equipo) |
+| `flag` | Fallback bandera de equipo |
 | `calendar` / `calendar-days` | Fecha de partidos |
 | `building-2` | Estadio |
 | `map-pin` / `map` | Ciudad / Sedes |
@@ -306,6 +359,7 @@ CDN: `<script src="https://unpkg.com/lucide@latest"></script>`
 | `arrow-up-circle` | Nota "clasifican" (detalle) |
 | `zap` | Badge "Próximo" partido |
 | `check-circle` | Grupos completados |
+| `refresh-cw` | Botón Actualizar resultados |
 
 ---
 
@@ -335,13 +389,17 @@ CDN: `<script src="https://unpkg.com/lucide@latest"></script>`
 | `.argentina-match` | `groups.css` | Borde celeste + fondo suave |
 | `.next-match` | `groups.css` | Borde dorado + fondo cálido + badge parpadeante |
 | `.live-match` | `groups.css` | Borde rojo + badge EN JUEGO con punto pulsante |
+| `.match-completed` | `groups.css` | Partido terminado: opacidad reducida, score en bold |
+| `.match-score.completed` | `groups.css` | Score numérico en bold, color `text-main` |
+| `.results-bar` | `groups.css` | Barra de timestamp + botón Actualizar |
+| `.results-refresh-btn.spinning` | `groups.css` | Icono girando durante el fetch |
 | `.champion-badge` | `groups.css` | Badge ★★★ Campeón |
 | `.bt-arg` | `bracket.css` | Ring celeste en camino de Argentina (aplicado dinámicamente) |
 | `.arg-panel-inner` | `bracket.css` | Panel de seguimiento del camino de Argentina |
 | `.arg-btn` / `.arg-btn-elim` | `bracket.css` | Botones del panel (activo celeste / eliminado rojo) |
 | `.tbd` | `bracket.css` | Slots vacíos del bracket |
 | `.detail-top-row` | `groups.css` | Flex de 2 columnas en vista individual |
-| `.standings-table` | `groups.css` | Tabla de posiciones (estática) |
+| `.standings-table` | `groups.css` | Tabla de posiciones (calculada con `calcStandings()`) |
 | `.sede-item` | `groups.css` | Card de ciudad + estadio |
 | `.header-countdown-side` | `layout.css` | Columna derecha del header (centrada) |
 | `.hparticle` | `layout.css` | Partícula dorada flotante |
@@ -389,34 +447,22 @@ CDN: `<script src="https://unpkg.com/lucide@latest"></script>`
 - **Sin módulos ES:** scripts clásicos para abrir `index.html` directo sin servidor.
 - **DOM imperativo:** `createElement` en JS, sin templates HTML, para facilitar futura generación con datos reales.
 - **Títulos de columna del bracket posicionados dinámicamente:** `bt-col-title` no tiene `top` fijo en CSS; `makeBtColumn()` calcula `top = firstCardCenter - H/2 - 22px` para que cada título quede pegado al primer card de su columna (R32, Octavos, Cuartos, Semis).
-- **Datos separados del render:** `js/data/` exporta constantes; `js/render/` las consume. Al agregar resultados, `data/` puede volverse async sin tocar renders.
-- **`lucide.createIcons()` múltiple:** se llama en el render inicial y en cada cambio de vista de grupos, para procesar los nuevos nodos que se agregan al DOM dinámicamente.
+- **Datos separados del render:** `js/data/` exporta constantes; `js/render/` las consume. Los resultados viven en `data/results.json` y se leen de `window.RESULTS` en render time.
+- **`lucide.createIcons()` múltiple:** se llama en el render inicial, en cada cambio de vista de grupos, y en `refreshResults()`.
 - **Countdown hardcodeado en UTC:** las fechas de Argentina se definen como `new Date('...Z')` en `header.js` para no depender de parsing de strings ni zona horaria del navegador.
 - **parseMatchUTC en render:** la detección de "próximo partido" en la vista individual usa la misma lógica de conversión ARG→UTC, centralizada en `parseMatchUTC()` dentro de `render/groups.js`.
-- **Hash de URL para persistencia de pestaña:** `location.hash` guarda la pestaña activa (`#grupos` / `#eliminatorias`). Al cargar, `main.js` lee el hash y restaura la pestaña sin animación. El botón Atrás del navegador también navega entre pestañas.
+- **Hash de URL para persistencia de pestaña:** `location.hash` guarda la pestaña activa (`#grupos` / `#eliminatorias`). Al cargar, `main.js` lee el hash y restaura la pestaña sin animación.
 - **`mundial2026.html` preservado:** backup del archivo monolítico original.
 - **Camino de Argentina calculado dinámicamente:** `isArgPath` en los datos ya no se usa para el render. `computeArgIds(state)` devuelve un `Set` de IDs a pintar según posición y resultados guardados en `localStorage` (`arg_bracket`). `applyArgPath()` aplica/quita `.bt-arg` sin re-renderizar el árbol. Ambas rutas confluyen en SF-2.
-
----
-
-## Carga automática de resultados — opciones evaluadas
-
-| Opción | Viabilidad | Detalle |
-|---|---|---|
-| **api-football.com** (RapidAPI) | ✅ Mejor opción | CORS habilitado, tier gratuito 100 req/día, cubre FIFA World Cup. Requiere API key |
-| **football-data.org** | ✅ Alternativa | Gratuito con registro, CORS habilitado. Cobertura de WC 2026 puede demorar |
-| Scraping directo FIFA/ESPN | ❌ No viable | CORS bloquea requests desde el browser sin backend |
-| APIs no oficiales (SofaScore) | ⚠️ Inestable | Sin garantías de continuidad |
-
-Pendiente de implementar: fetch al cargar la página, mapeo de resultados al formato de `GROUPS`/`BRACKET`, guardado en `localStorage` como caché.
+- **Resultados estáticos en JSON:** se eligió `data/results.json` como fuente de verdad (sin API) por costo cero, sin rate limits, funcionamiento offline, y control total del dato. El workflow es: editar JSON → push → GitHub Pages. Las APIs de fútbol disponibles (api-football.com, football-data.org) no tenían cobertura confiable del WC 2026 al momento de evaluar.
+- **Cache-busting en fetch:** `loadResults()` agrega `?t=<Date.now()>` a la URL para evitar que el browser sirva el JSON antiguo tras un push.
 
 ---
 
 ## Próximos pasos posibles
 
-- **Carga de resultados:** inputs de score en cada `.match-card`, guardado en `localStorage`
-- **Tabla de posiciones calculada:** poblar la standings table con PJ/G/E/P/GF/GC/DG/Pts reales a partir de los resultados cargados
 - **Clasificación automática al bracket:** poblar los slots según posiciones finales de grupos
+- **Resultados de eliminatorias:** extender `data/results.json` con el objeto `bracket` (`"R32-1": { "home": 1, "away": 0 }`) y mostrar scores en las cards del bracket
 - **Filtro por equipo:** highlight de todos los partidos de un equipo al clickearlo
 - **Dark mode:** toggle con `prefers-color-scheme` + variable override
 - **Verificar 3 sedes pendientes** (Grupo B y Grupo G)
