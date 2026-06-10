@@ -81,11 +81,31 @@
 .bracket-wrapper {
   overflow-x: auto;
   padding: 8px 0 24px;
+  -webkit-overflow-scrolling: touch;
 }
 
 .bracket-container {
-  min-width: 1370px;
   padding: 0 8px;
+  width: max-content;
+  min-width: 100%;
+}
+
+/* Hint de scroll horizontal (visible solo cuando el bracket es más ancho que la pantalla) */
+.bracket-scroll-hint {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 5px 16px 0;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  pointer-events: none;
+  animation: hintFade 4s ease 1.5s forwards;
+}
+.bracket-scroll-hint .lucide { width: 0.8rem; height: 0.8rem; }
+@keyframes hintFade {
+  0%, 60% { opacity: 1; }
+  100%     { opacity: 0; }
 }
 
 /* ============================================================ ÁRBOL SIMÉTRICO */
@@ -430,4 +450,44 @@
 @keyframes btTrophyGlow {
   0%, 100% { filter: drop-shadow(0 2px 6px rgba(255,215,0,0.45)); }
   50%       { filter: drop-shadow(0 4px 18px rgba(255,215,0,0.85)) drop-shadow(0 0 32px rgba(255,215,0,0.3)); }
+}
+
+/* ============================================================ RESPONSIVE */
+
+/* Hint visible cuando el bracket no cabe en pantalla */
+@media (max-width: 1300px) {
+  .bracket-scroll-hint { display: flex; }
+}
+
+/* Tablet */
+@media (max-width: 900px) {
+  .bt-half { gap: 14px; }
+  .bt-center { width: 175px; }
+  .bt-trophy-img { width: 56px; }
+
+  .arg-btn { padding: 4px 10px; font-size: 0.63rem; }
+  .arg-panel-title { font-size: 0.65rem; }
+}
+
+/* Mobile */
+@media (max-width: 600px) {
+  .bt-half { gap: 8px; padding-top: 22px; }
+  .bt-center { width: 130px; gap: 14px; padding: 22px 6px 0; }
+  .bt-trophy-img { width: 44px; }
+  .bt-trophy-wrap::before { width: 80px; height: 80px; margin-left: -40px; margin-top: -40px; }
+  .bt-trophy-wrap::after  { width: 64px; height: 64px; margin-left: -32px; margin-top: -32px; }
+
+  .bt-final-title { font-size: 0.58rem; }
+  .bt-final-team  { font-size: 0.68rem; padding: 7px 10px; }
+  .bt-final-meta  { font-size: 0.55rem; padding: 3px 10px; }
+  .bt-champion    { font-size: 0.62rem; padding: 4px 10px; }
+
+  .bt-third-card .bt-team { font-size: 0.65rem; padding: 4px 6px; }
+
+  /* Arg panel: stack steps para más espacio */
+  .arg-panel-inner { flex-direction: column; align-items: flex-start; gap: 8px; padding: 10px 12px; }
+  .arg-step-sep    { display: none; }
+  .arg-panel-title { font-size: 0.72rem; margin-right: 0; }
+  .arg-step        { gap: 6px; }
+  .arg-btn         { padding: 6px 12px; font-size: 0.7rem; border-radius: 6px; }
 }

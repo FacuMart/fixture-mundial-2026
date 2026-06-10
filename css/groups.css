@@ -311,7 +311,7 @@
 .detail-matches { padding: 0 24px 20px; }
 .detail-matches .match-card { padding: 13px 16px; margin-bottom: 10px; }
 .detail-matches .match-teams { font-size: 0.9rem; }
-.detail-matches .match-info { font-size: 0.76rem; margin-top: 7px; gap: 14px; flex-wrap: nowrap; }
+.detail-matches .match-info { font-size: 0.76rem; margin-top: 7px; gap: 14px; flex-wrap: wrap; }
 
 /* Próximo partido */
 .match-card.next-match {
@@ -464,4 +464,52 @@
 @keyframes spinIcon {
   from { transform: rotate(0deg); }
   to   { transform: rotate(360deg); }
+}
+
+/* ============================================================ RESPONSIVE */
+@media (max-width: 700px) {
+  /* Stack equipo + tabla de posiciones en columna */
+  .detail-top-row { flex-direction: column; }
+  .detail-col:first-child { border-right: none; border-bottom: 1px solid var(--border); padding-bottom: 14px; }
+  .detail-col { padding: 14px 16px 12px; }
+
+  /* Tabla: padding más compacto */
+  .standings-table th,
+  .standings-table td { padding: 6px 3px; }
+  .standings-table .td-team { gap: 4px; }
+
+  /* Partidos en vista detalle */
+  .detail-matches { padding: 0 14px 16px; }
+  .detail-matches .match-card { padding: 11px 12px; }
+  .detail-matches .match-info { gap: 8px; }
+
+  /* Sedes */
+  .sedes-list { flex-direction: column; }
+  .sede-item { min-width: 0; }
+  .detail-sedes { padding: 14px 16px 18px; }
+
+  /* Header detalle */
+  .group-header--detail { padding: 18px 20px; }
+  .group-header--detail .group-letter { font-size: 2rem; }
+  .detail-section-title--wide { margin: 0 16px 10px; }
+}
+
+@media (max-width: 500px) {
+  /* Ocultar GC en la tabla para ganar espacio */
+  .standings-table th:nth-child(8),
+  .standings-table td:nth-child(8) { display: none; }
+
+  /* Results bar: stack */
+  .results-bar { flex-direction: column; align-items: flex-start; gap: 6px; }
+
+  /* Group cards: padding menor */
+  .group-card .match-info { font-size: 0.7rem; }
+  .match-teams { gap: 4px; }
+  .match-team { font-size: 0.82rem; gap: 4px; }
+  .match-score { min-width: 34px; font-size: 0.78rem; }
+
+  /* Controles de vista */
+  .groups-controls { gap: 10px; margin-bottom: 14px; }
+  .view-btn { padding: 6px 10px; font-size: 0.78rem; }
+  .group-pill { width: 28px; height: 28px; font-size: 0.72rem; }
 }

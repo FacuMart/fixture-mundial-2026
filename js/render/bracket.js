@@ -1,10 +1,10 @@
-// Dimensiones base del bracket (px)
-const BT = {
-  H:      90,   // altura de cada card
-  G:      8,    // gap entre cards en R32
-  CW:     128,  // ancho de columna
-  CG:     22,   // gap entre columnas
-  get totalH() { return 8 * (this.H + this.G) - this.G; }, // 776
+// Dimensiones del bracket — se ajustan al viewport antes de cada render
+let BT = {
+  H:  90,   // altura de cada card
+  G:  8,    // gap entre cards en R32
+  CW: 128,  // ancho de columna
+  CG: 22,   // gap entre columnas
+  get totalH() { return 8 * (this.H + this.G) - this.G; },
 };
 
 // Calcula el centro vertical (midY desde top del col) de cada match en cada ronda
@@ -59,6 +59,16 @@ function makeBtColumn(matches, centers, title, colDelay = 0) {
 }
 
 function renderBracket() {
+  // Ajustar dimensiones según el viewport
+  const vw = window.innerWidth;
+  if (vw < 600) {
+    BT.H = 68; BT.CW = 92; BT.CG = 8;
+  } else if (vw < 900) {
+    BT.H = 78; BT.CW = 110; BT.CG = 14;
+  } else {
+    BT.H = 90; BT.CW = 128; BT.CG = 22;
+  }
+
   const container = document.getElementById('bracket-container');
   container.innerHTML = '';
 
