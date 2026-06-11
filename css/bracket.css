@@ -11,6 +11,7 @@
 /* ============================================================ ARG PANEL */
 #arg-panel {
   padding: 20px 8px 16px;
+  display: none;
 }
 
 #tab-eliminatorias .arg-panel-inner {
@@ -121,6 +122,7 @@
 /* ============================================================ BRACKET WRAPPER */
 .bracket-wrapper {
   overflow-x: auto;
+  overflow-y: visible;
   padding: 8px 0 24px;
   -webkit-overflow-scrolling: touch;
 }
@@ -202,7 +204,11 @@
   border-left: 3px solid transparent;
   overflow: hidden;
   transition: box-shadow var(--transition), transform var(--transition);
-  animation: btMatchEntrance 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+  opacity: 0;
+  transform: translateY(10px) scale(0.96);
+}
+.bt-match.bt-revealed {
+  animation: btMatchEntrance 0.45s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 .bt-match:hover {
   box-shadow: 0 6px 22px rgba(0, 0, 0, 0.5);
@@ -445,7 +451,7 @@
 .bt-third-card .bt-date { color: rgba(255, 215, 0, 0.38); }
 
 /* ============================================================ SHIMMER */
-/* Barrido de luz que cruza cada card al entrar — sincronizado con colDelay vía --shimmer-delay */
+/* Paused por defecto — arranca cuando el bracket se revela al activar la tab */
 .bt-match::before {
   content: '';
   position: absolute;
@@ -457,14 +463,38 @@
     transparent 75%
   );
   animation: btCardShimmer 5s ease var(--shimmer-delay, 0.5s) infinite;
+  animation-play-state: paused;
   pointer-events: none;
   z-index: 5;
+}
+
+/* Shimmer activo — solo corre cuando .bt-shimmer-active está presente */
+.bt-shimmer-active .bt-match::before {
+  animation-play-state: running;
 }
 
 /* Cards de la mitad derecha barren en sentido contrario (de derecha a izquierda) */
 .bt-match.bt-shimmer-rtl::before {
   animation-direction: reverse;
 }
+
+/* ============================================================ BRACKET RESULTS */
+.bt-score {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 3px 8px;
+  background: rgba(255, 215, 0, 0.15);
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: var(--gold);
+  letter-spacing: 0.05em;
+}
+.bt-score-sep { color: rgba(255, 215, 0, 0.45); }
+
+.bt-match.bt-completed { opacity: 0.72; }
+.bt-match.bt-completed .bt-team { color: rgba(255, 255, 255, 0.32); }
 
 /* ============================================================ ANIMATIONS */
 @keyframes btMatchEntrance {

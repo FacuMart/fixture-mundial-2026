@@ -22,9 +22,18 @@ function makeBtCard(match) {
   const el = document.createElement('div');
   el.className = 'bt-match'; // bt-arg se aplica dinámicamente por applyArgPath()
   el.id = 'bt-' + match.id;
+
+  const r = (window.RESULTS?.bracket || {})[match.id] ?? null;
+  if (r != null) el.classList.add('bt-completed');
+
+  const scoreHtml = r != null
+    ? `<div class="bt-score"><span>${r.home}</span><span class="bt-score-sep">:</span><span>${r.away}</span></div>`
+    : '';
+
   el.innerHTML = `
     <div class="bt-label">${match.label}</div>
     <div class="bt-team"><i data-lucide="minus"></i><span>${match.home}</span></div>
+    ${scoreHtml}
     <div class="bt-team"><i data-lucide="minus"></i><span>${match.away}</span></div>
     <div class="bt-date"><i data-lucide="calendar"></i>${match.date}</div>
   `;
@@ -50,7 +59,6 @@ function makeBtColumn(matches, centers, title, colDelay = 0, rtl = false) {
   matches.forEach((m, i) => {
     const card = makeBtCard(m);
     card.style.top = (centers[i] - BT.H / 2) + 'px';
-    card.style.animationDelay = colDelay + 's';
     card.style.setProperty('--shimmer-delay', (colDelay + 0.45) + 's');
     if (rtl) card.classList.add('bt-shimmer-rtl');
     col.appendChild(card);
@@ -139,8 +147,68 @@ function renderBracket() {
   wrapper.appendChild(rightHalf);
   container.appendChild(wrapper);
 
+  adjustFinalPosition(pos);
   renderArgPanel();
   applyArgPath();
+}
+
+// Centra el card de la Final al mismo nivel vertical que las Semis
+function adjustFinalPosition(pos) {
+  const block = document.querySelector('.bt-final-block');
+  if (!block) return;
+
+  const vw = window.innerWidth;
+  const trophyRingD   = vw < 600 ? 80 : 104;
+  const trophyMarginB = 28;
+  const flexGap       = 10;
+  const titleH        = vw < 600 ? 18 : 20;
+  const teamH         = vw < 600 ? 24 : 37;
+  const metaH         = vw < 600 ? 17 : 24;
+  const cardH         = 2 * teamH + 2 * metaH;
+  const centerPadT    = vw < 600 ? 22 : 44;
+
+  const aboveCardCenter = trophyRingD + trophyMarginB + flexGap + titleH + flexGap + cardH / 2;
+  const targetCenter    = 28 + pos.sf[0]; // 28 = bt-half padding-top
+  const marginTop       = Math.max(0, targetCenter - aboveCardCenter - centerPadT);
+
+  block.style.marginTop = marginTop + 'px';
+}
+
+// Revela las cards del bracket de afuera hacia adentro con stagger, luego activa shimmer
+function revealBracketCards() {
+  const wrapper = document.getElementById('bt-wrapper');
+  if (!wrapper) return;
+
+  wrapper.classList.remove('bt-shimmer-active');
+  wrapper.querySelectorAll('.bt-match').forEach(c => c.classList.remove('bt-revealed'));
+
+  const leftHalf  = wrapper.querySelector('.bt-half:first-child');
+  const rightHalf = wrapper.querySelector('.bt-half:last-child');
+  if (!leftHalf || !rightHalf) return;
+
+  const leftCols  = leftHalf.querySelectorAll(':scope > .bt-col-wrap');
+  const rightCols = rightHalf.querySelectorAll(':scope > .bt-col-wrap');
+
+  let lastDelay = 0;
+
+  // R32(0)→Oct(1)→QF(2)→SF(3) en ambas mitades simultáneamente
+  [0, 1, 2, 3].forEach(roundIndex => {
+    const lCards = [...(leftCols[roundIndex]?.querySelectorAll('.bt-match')  || [])];
+    const rCards = [...(rightCols[3 - roundIndex]?.querySelectorAll('.bt-match') || [])];
+
+    lCards.forEach((card, i) => {
+      const delay = roundIndex * 180 + i * 40;
+      if (delay > lastDelay) lastDelay = delay;
+      setTimeout(() => card.classList.add('bt-revealed'), delay);
+    });
+    rCards.forEach((card, i) => {
+      const delay = roundIndex * 180 + i * 40;
+      if (delay > lastDelay) lastDelay = delay;
+      setTimeout(() => card.classList.add('bt-revealed'), delay);
+    });
+  });
+
+  setTimeout(() => wrapper.classList.add('bt-shimmer-active'), lastDelay + 350);
 }
 
 // ============================================================ ARGENTINA PATH TRACKER

@@ -466,6 +466,54 @@
   to   { transform: rotate(360deg); }
 }
 
+/* ============================================================ TEMPORALES */
+/* Item 1: ocultar results-bar hasta que haya resultados que justifiquen mostrarla */
+.results-bar { display: none; }
+
+/* ============================================================ SECCIÓN GRUPOS — FONDO */
+#tab-grupos {
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(0, 51, 160, 0.18) 0%, transparent 50%),
+    linear-gradient(170deg, #1A2B4A 0%, #0D1828 100%);
+  border-radius: var(--radius);
+  padding: 20px;
+  padding-bottom: 32px;
+  box-shadow: 0 8px 48px rgba(0, 0, 0, 0.3);
+}
+
+/* Controles sobre fondo oscuro */
+#tab-grupos .view-toggle {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.11);
+}
+#tab-grupos .view-btn { color: rgba(255, 255, 255, 0.55); }
+#tab-grupos .view-btn:hover { color: rgba(255, 255, 255, 0.85); background: rgba(255, 255, 255, 0.08); }
+#tab-grupos .view-btn.active { background: var(--fifa-blue); color: #fff; }
+#tab-grupos .group-pill {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.13);
+  color: rgba(255, 255, 255, 0.65);
+}
+#tab-grupos .group-pill:hover { border-color: var(--arg-blue); color: var(--arg-blue); }
+
+/* Results bar sobre fondo oscuro — estilos listos para cuando se reactive (quitar .results-bar{display:none} de arriba) */
+#tab-grupos .results-bar {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.10);
+  color: rgba(255, 255, 255, 0.55);
+}
+#tab-grupos #results-updated { color: rgba(255, 255, 255, 0.55); }
+#tab-grupos .results-refresh-btn {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.55);
+}
+#tab-grupos .results-refresh-btn:hover {
+  border-color: var(--arg-blue);
+  color: var(--arg-blue);
+  background: rgba(116, 172, 223, 0.12);
+}
+
 /* ============================================================ RESPONSIVE */
 @media (max-width: 700px) {
   /* Stack equipo + tabla de posiciones en columna */

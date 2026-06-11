@@ -28,6 +28,7 @@ Single Page Application para visualizar el fixture del FIFA World Cup 2026. Vani
 | Diseño responsive (mobile-first) | ✅ Completo |
 | Clasificación automática al bracket | ⬜ Pendiente |
 | Filtro por equipo / selección | ⬜ Pendiente |
+| Backlog ítems 1–7 (fácil + medio + difícil) | ✅ Completo — ver Backlog |
 
 > ✅ **Bracket completo:** Ronda de 32 (16 partidos, M73–M88) + Octavos (8) + Cuartos (4) + Semis (2) + Final + 3er puesto = **104 partidos totales** (72 grupos + 32 eliminatorias).
 >
@@ -624,7 +625,7 @@ Organizado por dificultad estimada. Cada ítem está listo para implementar en u
 
 ---
 
-### 🟢 Fácil
+### ✅ Implementados
 
 #### 1. Ocultar barra de resultados y panel de Argentina (temporalmente)
 
@@ -634,7 +635,7 @@ Organizado por dificultad estimada. Cada ítem está listo para implementar en u
 - Opción A (más simple): `display: none` en CSS sobre `#arg-panel` y `.results-bar`.
 - Opción B (más limpia): agregar un flag `SHOW_ARG_PANEL = false` al inicio de `render/bracket.js` y envolver `renderArgPanel()` con un `if`. Ídem para la results bar en `index.html`.
 
-**Archivo/s:** `css/bracket.css` o `js/render/bracket.js` + `index.html`
+**Implementado:** `display: none` en `css/groups.css` sobre `.results-bar`; `display: none` en `css/bracket.css` sobre `#arg-panel`. Los estilos de fondo oscuro para la results-bar están listos en `#tab-grupos .results-bar` — para reactivar, solo quitar `.results-bar { display: none; }`.
 
 ---
 

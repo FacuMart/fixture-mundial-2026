@@ -16,33 +16,36 @@ function activateTab(tabName, animate) {
   }
 
   if (tabName === 'eliminatorias') {
-    document.querySelectorAll('.bt-match').forEach(card => {
-      card.style.animation = 'none';
-      void card.offsetHeight;
-      card.style.animation = '';
-    });
     const btCenter = document.querySelector('.bt-center');
     if (btCenter) {
       btCenter.style.animation = 'none';
       void btCenter.offsetHeight;
       btCenter.style.animation = '';
     }
+    setTimeout(revealBracketCards, 50);
   }
 }
 
 async function loadResults() {
+  let fetchError = false;
   try {
     const res = await fetch('data/results.json?t=' + Date.now());
+    if (!res.ok) throw new Error('HTTP ' + res.status);
     window.RESULTS = await res.json();
   } catch (_) {
     window.RESULTS = { updated: null, groups: {}, bracket: {} };
+    fetchError = true;
   }
   const el = document.getElementById('results-updated');
   if (el) {
-    const ts = window.RESULTS.updated;
-    el.textContent = ts
-      ? 'Actualizado: ' + new Date(ts).toLocaleString('es-AR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })
-      : 'Sin resultados cargados';
+    if (fetchError) {
+      el.textContent = 'Error al cargar resultados';
+    } else {
+      const ts = window.RESULTS.updated;
+      el.textContent = ts
+        ? 'Actualizado: ' + new Date(ts).toLocaleString('es-AR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })
+        : 'Sin resultados cargados';
+    }
   }
 }
 
@@ -53,6 +56,9 @@ async function refreshResults() {
   renderGroups();
   renderBracket();
   lucide.createIcons();
+  if (document.getElementById('tab-eliminatorias')?.classList.contains('active')) {
+    setTimeout(revealBracketCards, 50);
+  }
   if (btn) btn.classList.remove('spinning');
 }
 
@@ -76,4 +82,7 @@ async function refreshResults() {
     ? location.hash.slice(1)
     : 'grupos';
   activateTab(initialTab, false);
+
+  // Auto-refresh cada 5 minutos
+  setInterval(refreshResults, 5 * 60 * 1000);
 })();
