@@ -17,6 +17,80 @@ function calcBtPositions() {
   return { r32, oct, qf, sf };
 }
 
+// ── Resolución de equipos ────────────────────────────────────────────────────
+
+// Devuelve { name, flag } si el slot está resuelto, null si no.
+function resolveTeam(label) {
+  // Ganador: "G M73", "G O1", "G C1", "G SF1"
+  if (label.startsWith('G ')) {
+    const m = findBracketMatchByLabel(label.slice(2));
+    if (!m) return null;
+    const r = (window.RESULTS?.bracket || {})[m.id] ?? null;
+    if (r == null) return null;
+    if (r.home > r.away) return resolveTeam(m.home);
+    if (r.away > r.home) return resolveTeam(m.away);
+    return null; // empate → sin ganador
+  }
+
+  // Perdedor: "Perd. SF1", "Perd. SF2" (3er puesto)
+  if (label.startsWith('Perd. ')) {
+    const m = findBracketMatchByLabel(label.slice(6));
+    if (!m) return null;
+    const r = (window.RESULTS?.bracket || {})[m.id] ?? null;
+    if (r == null) return null;
+    if (r.home > r.away) return resolveTeam(m.away);
+    if (r.away > r.home) return resolveTeam(m.home);
+    return null;
+  }
+
+  // Mejor tercero: "3ABCDF", "3CDFGH", etc.
+  const thirdMatch = label.match(/^3([A-L]+)$/);
+  if (thirdMatch) {
+    return resolveBestThird([...thirdMatch[1]]);
+  }
+
+  // Posición en grupo: "1A", "2B"
+  const posMatch = label.match(/^([12])([A-L])$/);
+  if (posMatch) {
+    const pos    = parseInt(posMatch[1]) - 1;
+    const letter = posMatch[2];
+    const group  = GROUPS[letter];
+    if (!group) return null;
+    const standings = calcStandings(letter, group);
+    const team = standings[pos];
+    return team ? { name: team.name, flag: team.flag } : null;
+  }
+
+  return null;
+}
+
+function findBracketMatchByLabel(labelStr) {
+  const all = [
+    ...BRACKET.ronda32, ...BRACKET.octavos,
+    ...BRACKET.cuartos, ...BRACKET.semis,
+    BRACKET.final, BRACKET.tercero,
+  ];
+  return all.find(m => (m.label || m.id) === labelStr) ?? null;
+}
+
+function resolveBestThird(letters) {
+  const thirds = letters
+    .map(l => { const g = GROUPS[l]; return g ? calcStandings(l, g)[2] : null; })
+    .filter(Boolean);
+  if (!thirds.length) return null;
+  thirds.sort((a, b) => b.pts - a.pts || b.dg - a.dg || b.gf - a.gf);
+  return { name: thirds[0].name, flag: thirds[0].flag };
+}
+
+// Genera el HTML interno de un slot de equipo
+function teamHtml(label) {
+  const t = resolveTeam(label);
+  if (t) return `<span class="fi fi-${t.flag} bt-flag"></span><span>${t.name}</span>`;
+  return `<i data-lucide="minus"></i><span>${label}</span>`;
+}
+
+// ── Cards del bracket ────────────────────────────────────────────────────────
+
 // Crea una card de partido para el árbol del bracket
 function makeBtCard(match) {
   const el = document.createElement('div');
@@ -30,11 +104,14 @@ function makeBtCard(match) {
     ? `<div class="bt-score"><span>${r.home}</span><span class="bt-score-sep">:</span><span>${r.away}</span></div>`
     : '';
 
+  const homeR = resolveTeam(match.home) != null;
+  const awayR = resolveTeam(match.away) != null;
+
   el.innerHTML = `
     <div class="bt-label">${match.label}</div>
-    <div class="bt-team"><i data-lucide="minus"></i><span>${match.home}</span></div>
+    <div class="bt-team${homeR ? ' bt-team--resolved' : ''}">${teamHtml(match.home)}</div>
     ${scoreHtml}
-    <div class="bt-team"><i data-lucide="minus"></i><span>${match.away}</span></div>
+    <div class="bt-team${awayR ? ' bt-team--resolved' : ''}">${teamHtml(match.away)}</div>
     <div class="bt-date"><i data-lucide="calendar"></i>${match.date}</div>
   `;
   return el;
@@ -107,6 +184,28 @@ function renderBracket() {
   leftHalf.appendChild(makeBtColumn(leftSF,  pos.sf,  'Semis',       0.24));
 
   // Centro: Final + 3er puesto
+  const finResult  = (window.RESULTS?.bracket || {})['FIN'] ?? null;
+  const thrdResult = (window.RESULTS?.bracket || {})['3RD'] ?? null;
+
+  const finScoreHtml = finResult != null
+    ? `<div class="bt-score"><span>${finResult.home}</span><span class="bt-score-sep">:</span><span>${finResult.away}</span></div>`
+    : '';
+  const thrdScoreHtml = thrdResult != null
+    ? `<div class="bt-score"><span>${thrdResult.home}</span><span class="bt-score-sep">:</span><span>${thrdResult.away}</span></div>`
+    : '';
+
+  const champion = finResult != null
+    ? (finResult.home > finResult.away ? resolveTeam(BRACKET.final.home) : finResult.away > finResult.home ? resolveTeam(BRACKET.final.away) : null)
+    : null;
+  const championHtml = champion
+    ? `<span class="fi fi-${champion.flag} bt-flag"></span><span>${champion.name}</span>`
+    : `<i data-lucide="trophy"></i> Campeón`;
+
+  const finHomeR  = resolveTeam(BRACKET.final.home)    != null;
+  const finAwayR  = resolveTeam(BRACKET.final.away)    != null;
+  const thrdHomeR = resolveTeam(BRACKET.tercero.home)  != null;
+  const thrdAwayR = resolveTeam(BRACKET.tercero.away)  != null;
+
   const center = document.createElement('div');
   center.className = 'bt-center';
   center.innerHTML = `
@@ -116,18 +215,20 @@ function renderBracket() {
       </div>
       <div class="bt-final-title"><i data-lucide="trophy"></i> La Gran Final</div>
       <div class="bt-final-card" id="bt-FIN">
-        <div class="bt-final-team"><i data-lucide="minus"></i><span>${BRACKET.final.home}</span></div>
-        <div class="bt-final-team"><i data-lucide="minus"></i><span>${BRACKET.final.away}</span></div>
+        <div class="bt-final-team${finHomeR ? ' bt-team--resolved' : ''}">${teamHtml(BRACKET.final.home)}</div>
+        ${finScoreHtml}
+        <div class="bt-final-team${finAwayR ? ' bt-team--resolved' : ''}">${teamHtml(BRACKET.final.away)}</div>
         <div class="bt-final-meta"><i data-lucide="calendar"></i>${BRACKET.final.date}</div>
         <div class="bt-final-meta"><i data-lucide="map-pin"></i>${BRACKET.final.stadium}</div>
       </div>
-      <div class="bt-champion"><i data-lucide="trophy"></i> Campeón</div>
+      <div class="bt-champion">${championHtml}</div>
     </div>
     <div class="bt-third-block">
       <div class="bt-third-title"><i data-lucide="medal"></i> 3° y 4° Puesto</div>
       <div class="bt-third-card" id="bt-3RD">
-        <div class="bt-team"><i data-lucide="minus"></i><span>${BRACKET.tercero.home}</span></div>
-        <div class="bt-team"><i data-lucide="minus"></i><span>${BRACKET.tercero.away}</span></div>
+        <div class="bt-team${thrdHomeR ? ' bt-team--resolved' : ''}">${teamHtml(BRACKET.tercero.home)}</div>
+        ${thrdScoreHtml}
+        <div class="bt-team${thrdAwayR ? ' bt-team--resolved' : ''}">${teamHtml(BRACKET.tercero.away)}</div>
         <div class="bt-date"><i data-lucide="calendar"></i>${BRACKET.tercero.date}</div>
         <div class="bt-date"><i data-lucide="map-pin"></i>${BRACKET.tercero.stadium}</div>
       </div>
@@ -213,9 +314,8 @@ function revealBracketCards() {
 
 // ============================================================ ARGENTINA PATH TRACKER
 
-// Caminos posibles según posición en Grupo J
 // 1° → R32-14 (M86) → R16-7 (O7) → QF-4 (C4) → SF-2
-// 2° → R32-12 (M84) → R16-6 (O6) → QF-3 (C3) → SF-2  (semi idéntica)
+// 2° → R32-12 (M84) → R16-6 (O6) → QF-3 (C3) → SF-2
 const ARG_PATH_MAP = {
   '1': ['R32-14', 'R16-7', 'QF-4', 'SF-2'],
   '2': ['R32-12', 'R16-6', 'QF-3', 'SF-2'],
@@ -223,11 +323,64 @@ const ARG_PATH_MAP = {
 const ARG_ROUND_LABELS = ['R32', 'Octavos', 'Cuartos', 'Semis'];
 const ARG_ROUND_KEYS   = ['r32', 'r16', 'qf', 'sf'];
 
-function loadArgState() {
-  try { return JSON.parse(localStorage.getItem('arg_bracket')) || {}; } catch { return {}; }
+// Busca un partido del bracket por su id ('R32-14', 'R16-7', etc.)
+function findMatchById(id) {
+  return [...BRACKET.ronda32, ...BRACKET.octavos, ...BRACKET.cuartos, ...BRACKET.semis]
+    .find(m => m.id === id) ?? null;
 }
-function saveArgState(s) {
-  localStorage.setItem('arg_bracket', JSON.stringify(s));
+
+// Deriva el estado del camino de Argentina desde window.RESULTS
+function computeArgFromResults() {
+  const state = { position: null, provisional: false };
+  const jGroup = GROUPS['J'];
+  if (!jGroup) return state;
+
+  const groupResults   = window.RESULTS?.groups  || {};
+  const bracketResults = window.RESULTS?.bracket || {};
+
+  const groupResultCount = jGroup.matches.reduce(
+    (n, _, i) => n + (groupResults[`J-${i}`] != null ? 1 : 0), 0
+  );
+  if (groupResultCount === 0) return state;
+
+  const jStandings = calcStandings('J', jGroup);
+  const argIdx = jStandings.findIndex(t => t.isArgentina);
+  if (argIdx < 0) return state;
+
+  state.position   = String(argIdx + 1);
+  state.provisional = groupResultCount < jGroup.matches.length;
+
+  if (!ARG_PATH_MAP[state.position]) return state; // eliminada en grupos
+
+  const path = ARG_PATH_MAP[state.position];
+  for (let i = 0; i < path.length; i++) {
+    const r = bracketResults[path[i]] ?? null;
+    if (r == null) break;
+
+    const match = findMatchById(path[i]);
+    if (!match) break;
+
+    const isArgHome = resolveTeam(match.home)?.name === 'Argentina';
+    const argScore  = isArgHome ? r.home : r.away;
+    const oppScore  = isArgHome ? r.away : r.home;
+
+    if (argScore > oppScore)      { state[ARG_ROUND_KEYS[i]] = 'won'; }
+    else if (argScore < oppScore) { state[ARG_ROUND_KEYS[i]] = 'lost'; break; }
+  }
+
+  // Final — solo si ganó la semi
+  if (state.sf === 'won') {
+    const finR = bracketResults['FIN'] ?? null;
+    if (finR != null) {
+      const isArgHome = resolveTeam(BRACKET.final.home)?.name === 'Argentina';
+      const argScore  = isArgHome ? finR.home : finR.away;
+      const oppScore  = isArgHome ? finR.away : finR.home;
+      if (argScore > oppScore)      state.final = 'won';
+      else if (argScore < oppScore) state.final = 'lost';
+    }
+  }
+
+  return state;
 }
 
 function computeArgIds(state) {
@@ -243,7 +396,7 @@ function computeArgIds(state) {
 }
 
 function applyArgPath() {
-  const ids = computeArgIds(loadArgState());
+  const ids = computeArgIds(computeArgFromResults());
   document.querySelectorAll('.bt-match').forEach(card => {
     const id = card.id.replace('bt-', '');
     card.classList.toggle('bt-arg', ids.has(id));
@@ -253,60 +406,63 @@ function applyArgPath() {
 function renderArgPanel() {
   const panel = document.getElementById('arg-panel');
   if (!panel) return;
-  const state = loadArgState();
+  const state = computeArgFromResults();
 
-  let html = '<div class="arg-panel-inner">';
-  html += '<span class="arg-panel-title">🇦🇷 Argentina</span>';
+  const steps = [];
 
-  // Paso 0: posición en Grupo J
-  html += '<div class="arg-step">';
-  html += '<span class="arg-step-label">Grupo J:</span>';
-  ['1', '2'].forEach(v => {
-    const active = state.position === v ? ' active' : '';
-    html += `<button class="arg-btn${active}" data-action="position" data-value="${v}" type="button">${v}°</button>`;
-  });
-  html += '</div>';
+  if (!state.position) {
+    steps.push(`<span class="arg-status arg-status--pending">Sin resultados</span>`);
+  } else if (!ARG_PATH_MAP[state.position]) {
+    steps.push(`
+      <div class="arg-step">
+        <span class="arg-step-label">Grupo J:</span>
+        <span class="arg-status arg-status--lost">${state.position}° — No clasificó</span>
+      </div>`);
+  } else {
+    const prov = state.provisional
+      ? ` <span class="arg-prov">(prov.)</span>` : '';
+    steps.push(`
+      <div class="arg-step">
+        <span class="arg-step-label">Grupo J:</span>
+        <span class="arg-status arg-status--won">${state.position}°${prov}</span>
+      </div>`);
 
-  // Pasos por ronda — solo aparece si el paso anterior fue "ganó"
-  if (state.position) {
     for (let i = 0; i < ARG_ROUND_KEYS.length; i++) {
-      const key  = ARG_ROUND_KEYS[i];
       const prev = i === 0 || state[ARG_ROUND_KEYS[i - 1]] === 'won';
       if (!prev) break;
 
-      html += '<span class="arg-step-sep">›</span>';
-      html += '<div class="arg-step">';
-      html += `<span class="arg-step-label">${ARG_ROUND_LABELS[i]}:</span>`;
-      html += `<button class="arg-btn${state[key] === 'won'  ? ' active' : ''}" data-action="${key}" data-value="won"  type="button">Ganó</button>`;
-      html += `<button class="arg-btn${state[key] === 'lost' ? ' active arg-btn-elim' : ''}" data-action="${key}" data-value="lost" type="button">Perdió</button>`;
-      html += '</div>';
+      const result = state[ARG_ROUND_KEYS[i]];
+      let chip;
+      if      (result === 'won')  chip = `<span class="arg-status arg-status--won">Ganó</span>`;
+      else if (result === 'lost') chip = `<span class="arg-status arg-status--lost">Eliminada</span>`;
+      else                        chip = `<span class="arg-status arg-status--pending">Pendiente</span>`;
 
-      if (state[key] !== 'won') break;
+      steps.push(`
+        <div class="arg-step">
+          <span class="arg-step-label">${ARG_ROUND_LABELS[i]}:</span>
+          ${chip}
+        </div>`);
+
+      if (result !== 'won') break;
+    }
+
+    if (state.sf === 'won') {
+      let chip;
+      if      (state.final === 'won')  chip = `<span class="arg-status arg-status--champion">🏆 Campeón</span>`;
+      else if (state.final === 'lost') chip = `<span class="arg-status arg-status--lost">Finalista</span>`;
+      else                             chip = `<span class="arg-status arg-status--pending">Pendiente</span>`;
+
+      steps.push(`
+        <div class="arg-step">
+          <span class="arg-step-label">Final:</span>
+          ${chip}
+        </div>`);
     }
   }
 
-  html += '</div>';
-  panel.innerHTML = html;
-
-  panel.querySelectorAll('.arg-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const action = btn.dataset.action;
-      const value  = btn.dataset.value;
-      let s = loadArgState();
-
-      if (action === 'position') {
-        // Toggle: click la misma posición la deselecciona
-        s = s.position === value ? {} : { position: value };
-      } else {
-        const idx = ARG_ROUND_KEYS.indexOf(action);
-        s[action] = s[action] === value ? null : value;
-        // Limpiar rondas posteriores al cambiar un resultado previo
-        for (let i = idx + 1; i < ARG_ROUND_KEYS.length; i++) delete s[ARG_ROUND_KEYS[i]];
-      }
-
-      saveArgState(s);
-      renderArgPanel();
-      applyArgPath();
-    });
-  });
+  panel.innerHTML = `
+    <div class="arg-panel-inner">
+      <span class="arg-panel-title">🇦🇷 Argentina</span>
+      ${steps.join('<span class="arg-step-sep">›</span>')}
+    </div>`;
 }

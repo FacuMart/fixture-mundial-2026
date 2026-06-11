@@ -121,6 +121,89 @@ function renderAdmin() {
   });
 
   setStatus('', '');
+  renderBracketAdmin();
+}
+
+// ─── Render bracket ───────────────────────────────────────────────────────────
+function renderBracketAdmin() {
+  const container = document.getElementById('bracket-admin');
+  container.innerHTML = '';
+
+  const rounds = [
+    { name: 'Ronda de 32 — Lado A', color: '#4f46e5', matches: BRACKET.ronda32.slice(0, 8) },
+    { name: 'Ronda de 32 — Lado B', color: '#4f46e5', matches: BRACKET.ronda32.slice(8) },
+    { name: 'Octavos de Final',      color: '#7c3aed', matches: BRACKET.octavos },
+    { name: 'Cuartos de Final',       color: '#9333ea', matches: BRACKET.cuartos },
+    { name: 'Semifinales',            color: '#c026d3', matches: BRACKET.semis },
+    { name: 'Final + 3er Puesto',     color: '#e11d48', matches: [BRACKET.final, BRACKET.tercero] },
+  ];
+
+  rounds.forEach(round => {
+    const card = document.createElement('div');
+    card.className = 'admin-card';
+    card.innerHTML = `
+      <div class="admin-card-header" style="background: linear-gradient(135deg, ${round.color}, ${round.color}CC); justify-content: center;">
+        <span>${round.name}</span>
+      </div>
+    `;
+
+    const matchesList = document.createElement('div');
+    matchesList.className = 'admin-matches';
+
+    round.matches.forEach(m => {
+      const key   = m.id;
+      const label = m.label || m.id;
+      const saved = localResults.bracket?.[key] ?? null;
+      const row   = document.createElement('div');
+      row.className = 'admin-match-row' + (saved !== null ? ' has-result' : '');
+      row.dataset.key = key;
+
+      row.innerHTML = `
+        <div class="admin-match-meta">
+          <span class="admin-match-date">${label} · ${m.date}</span>
+        </div>
+        <div class="admin-match-score-row">
+          <span class="admin-team-name home">${m.home}</span>
+          <input class="score-input" type="number" min="0" max="99" placeholder="–"
+            data-side="home" data-key="${key}" value="${saved !== null ? saved.home : ''}">
+          <span class="admin-score-sep">:</span>
+          <input class="score-input" type="number" min="0" max="99" placeholder="–"
+            data-side="away" data-key="${key}" value="${saved !== null ? saved.away : ''}">
+          <span class="admin-team-name away">${m.away}</span>
+          <button class="clear-btn" data-key="${key}" title="Limpiar resultado">×</button>
+        </div>
+      `;
+
+      row.querySelector('.clear-btn').addEventListener('click', e => {
+        const k = e.currentTarget.dataset.key;
+        delete localResults.bracket[k];
+        row.querySelectorAll('.score-input').forEach(inp => inp.value = '');
+        row.classList.remove('has-result');
+      });
+
+      row.querySelectorAll('.score-input').forEach(inp => {
+        inp.addEventListener('input', () => {
+          const k  = inp.dataset.key;
+          const gr = row.querySelectorAll('.score-input');
+          const hv = gr[0].value;
+          const av = gr[1].value;
+          if (hv !== '' && av !== '') {
+            if (!localResults.bracket) localResults.bracket = {};
+            localResults.bracket[k] = { home: parseInt(hv, 10), away: parseInt(av, 10) };
+            row.classList.add('has-result');
+          } else {
+            delete localResults.bracket?.[k];
+            row.classList.remove('has-result');
+          }
+        });
+      });
+
+      matchesList.appendChild(row);
+    });
+
+    card.appendChild(matchesList);
+    container.appendChild(card);
+  });
 }
 
 // ─── Guardar ──────────────────────────────────────────────────────────────────

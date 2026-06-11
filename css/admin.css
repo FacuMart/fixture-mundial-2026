@@ -45,12 +45,14 @@ body {
   font-weight: 700;
   margin-bottom: .25rem;
   color: #fff;
+  text-align: center;
 }
 
 .login-box p {
   font-size: .82rem;
   color: var(--muted);
   margin-bottom: 1.75rem;
+  text-align: center;
 }
 
 .form-group {
@@ -298,6 +300,33 @@ body {
 }
 
 .clear-btn:hover { color: var(--error); border-color: var(--error); }
+
+/* ─── Bracket section ────────────────────────────────────────────────────── */
+.admin-section-divider {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  margin: 2rem 0 1rem;
+  color: var(--muted);
+  font-size: .72rem;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+.admin-section-divider::before,
+.admin-section-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+#bracket-admin {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1rem;
+}
 
 /* ─── Bottom save bar ────────────────────────────────────────────────────── */
 .admin-bottom-bar {

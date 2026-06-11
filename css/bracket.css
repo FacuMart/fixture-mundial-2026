@@ -119,6 +119,50 @@
   color: #fff;
 }
 
+/* ─── Chips de estado automático (Fase 3) ─────────────────────────────────── */
+.arg-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.6rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 20px;
+  border: 1.5px solid transparent;
+  white-space: nowrap;
+  line-height: 1.4;
+}
+
+.arg-status--won {
+  background: var(--arg-blue);
+  border-color: var(--arg-blue);
+  color: #fff;
+}
+
+.arg-status--lost {
+  background: #E53E3E;
+  border-color: #E53E3E;
+  color: #fff;
+}
+
+.arg-status--pending {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.13);
+  color: rgba(255, 255, 255, 0.38);
+}
+
+.arg-status--champion {
+  background: rgba(255, 215, 0, 0.15);
+  border-color: rgba(255, 215, 0, 0.55);
+  color: var(--gold-dark);
+}
+
+.arg-prov {
+  font-weight: 400;
+  opacity: 0.7;
+  font-size: 0.55rem;
+}
+
 /* ============================================================ BRACKET WRAPPER */
 .bracket-wrapper {
   overflow-x: auto;
@@ -259,6 +303,30 @@
 .bt-team:last-of-type { border-bottom: none; }
 .bt-team .lucide { width: 0.7rem; height: 0.7rem; flex-shrink: 0; color: rgba(255, 255, 255, 0.28); }
 .bt-match.bt-arg .bt-team { color: var(--arg-blue); font-style: normal; }
+
+.bt-flag {
+  width: 16px;
+  height: 12px;
+  flex-shrink: 0;
+  border-radius: 2px;
+}
+
+.bt-team--resolved {
+  color: rgba(255, 255, 255, 0.9);
+  font-style: normal;
+}
+
+.bt-final-team.bt-team--resolved {
+  color: rgba(255, 255, 255, 0.92);
+  font-style: normal;
+}
+
+.bt-third-card .bt-team--resolved {
+  color: rgba(255, 215, 0, 0.92);
+  font-style: normal;
+}
+
+.bt-match.bt-arg .bt-team--resolved { color: #fff; }
 
 .bt-date {
   display: flex;

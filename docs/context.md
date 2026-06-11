@@ -24,10 +24,13 @@ Single Page Application para visualizar el fixture del FIFA World Cup 2026. Vani
 | Fase de Grupos — vista general con animaciones | ✅ Completo |
 | Fase de Grupos — vista individual por grupo | ✅ Completo |
 | Bracket de Eliminatorias (visualización) | ✅ Completo — sin líneas conectoras, ver nota ⚠️ |
-| Camino de Argentina dinámico | ✅ Completo — panel con estado en localStorage |
+| Camino de Argentina — panel automático desde Firestore | ✅ Completo — chips read-only derivados de resultados reales |
 | Firebase Firestore — fuente de verdad de resultados | ✅ Completo |
 | Panel admin con login (Firebase Auth) | ✅ Completo — `admin.html` |
 | Carga de resultados de grupos desde admin | ✅ Completo |
+| Carga de resultados del bracket desde admin | ✅ Completo — `renderBracketAdmin()` (Fase 1 bracket) |
+| Resolución automática de equipos en bracket | ✅ Completo — `resolveTeam()` (Fase 2 bracket) |
+| Argentina path automático desde resultados reales | ✅ Completo — `computeArgFromResults()` (Fase 3 bracket) |
 | Tabla de posiciones calculada | ✅ Completo — PJ/G/E/P/GF/GC/Pts desde resultados |
 | Tab nav con sessionStorage (refresh/cierre) | ✅ Completo |
 | FOUC del tab nav prevenido con inline script | ✅ Completo |
@@ -36,9 +39,6 @@ Single Page Application para visualizar el fixture del FIFA World Cup 2026. Vani
 | Reveal escalonado de cards + shimmer coordinado | ✅ Completo |
 | Auto-refresh cada 5 min + error handling visible | ✅ Completo |
 | Visibilidad de scores en partidos completados | ✅ Completo — fondo blanco, sin opacity en card |
-| Carga de resultados del bracket desde admin | ⬜ Pendiente (Fase 1 bracket) |
-| Resolución automática de equipos en bracket | ⬜ Pendiente (Fase 2 bracket) |
-| Argentina path automático desde resultados reales | ⬜ Pendiente (Fase 3 bracket) |
 | Filtro por equipo / selección | ⬜ Pendiente |
 
 > ✅ **Bracket completo:** Ronda de 32 (16 partidos, M73–M88) + Octavos (8) + Cuartos (4) + Semis (2) + Final + 3er puesto = **104 partidos totales** (72 grupos + 32 eliminatorias).
@@ -82,7 +82,7 @@ fixture-mundial-2026/
 Firebase CDN (app/auth/firestore compat) → `firebase.js` → `lucide CDN` → `header.js` → `data/groups.js` → `data/bracket.js` → `render/groups.js` → `render/bracket.js` → `main.js`
 
 **Orden de carga de scripts en `admin.html`:**
-Firebase CDN → `firebase.js` → `data/groups.js` → `admin.js`
+Firebase CDN → `firebase.js` → `data/groups.js` → `data/bracket.js` → `admin.js`
 
 ---
 
@@ -137,12 +137,16 @@ Página separada que requiere login con Firebase Auth (email/password). Solo el 
 1. Abrir `admin.html` → si no está autenticado, muestra formulario de login
 2. Login con `auth.signInWithEmailAndPassword()` → `onAuthStateChanged` dispara → panel visible
 3. Carga los resultados actuales de Firestore → pre-rellena los inputs
-4. El admin edita scores (inputs numéricos por partido, organizados por grupo)
+4. El admin edita scores (grupos + bracket) por partido
 5. "Guardar resultados" → `saveResultsToFirebase(localResults)` → Firestore actualizado
 6. El site público (`index.html`) lee de Firestore en el próximo load o auto-refresh
 
+### Secciones del panel
+- **Grupos** (`#groups-admin`): 12 cards, una por grupo. Keys `"A-0"` … `"L-5"` en `localResults.groups`.
+- **Fase Eliminatoria** (`#bracket-admin`): 6 cards (R32 A, R32 B, Octavos, Cuartos, Semis, Final+3°). Keys `"R32-1"` … `"SF-2"`, `"FIN"`, `"3RD"` en `localResults.bracket`. Renderizado por `renderBracketAdmin()` en `admin.js`.
+
 ### Estado local del admin
-`localResults` espeja la estructura de Firestore. Cada input `oninput` actualiza `localResults.groups[key]`. El botón "×" por partido limpia la clave del objeto.
+`localResults` espeja la estructura de Firestore: `{ updated, groups: {}, bracket: {} }`. Cada input `oninput` actualiza la clave correspondiente. El botón "×" por partido la limpia.
 
 ### FOUC en admin
 El panel usa `[hidden] { display: none !important; }` en `admin.css` para que el `hidden` attribute no sea sobreescrito por `display: flex` del `#login-section`.
@@ -269,7 +273,7 @@ BRACKET = {
 }
 ```
 
-`home`/`away` son slots (`'1J'`, `'G M85'`), no equipos reales aún.
+`home`/`away` son slots (`'1J'`, `'G M85'`). `resolveTeam()` los convierte a `{ name, flag }` en tiempo de render.
 
 **Camino Argentina:**
 - 1°J: R32-14 → R16-7 → QF-4 → SF-2
@@ -279,9 +283,35 @@ BRACKET = {
 
 | Fase | Descripción | Estado |
 |---|---|---|
-| Fase 1 | Inputs en admin para resultados del bracket | ⬜ Pendiente |
-| Fase 2 | `resolveTeam("1A")` → nombre real desde calcStandings; `resolveTeam("G M73")` → ganador del match | ⬜ Pendiente |
-| Fase 3 | Argentina path automático desde resultados reales (reemplaza el panel manual) | ⬜ Pendiente |
+| Fase 1 | Inputs en admin para resultados del bracket | ✅ Completo — `renderBracketAdmin()` |
+| Fase 2 | `resolveTeam()` → nombre real desde `calcStandings` o ganador de match anterior | ✅ Completo |
+| Fase 3 | Argentina path automático desde resultados reales (sin localStorage, sin botones manuales) | ✅ Completo — `computeArgFromResults()` |
+
+### Resolución de equipos (`resolveTeam(label)`)
+
+Función en `js/render/bracket.js`. Devuelve `{ name, flag }` o `null`.
+
+| Formato del label | Resolución |
+|---|---|
+| `"1A"`, `"2B"` | `calcStandings(letter)[pos]` |
+| `"G M73"`, `"G O1"`, `"G C1"`, `"G SF1"` | Ganador del partido por label |
+| `"Perd. SF1"`, `"Perd. SF2"` | Perdedor del partido (3er puesto) |
+| `"3ABCDF"` | Mejor 3° de los grupos indicados |
+
+`teamHtml(label)` usa `resolveTeam()` para generar el HTML: si está resuelto, muestra bandera + nombre con clase `.bt-team--resolved`; si no, muestra icono `minus` + slot literal.
+
+### Argentina path panel (`renderArgPanel()`)
+
+Ya no usa `localStorage`. Estado derivado 100% de `window.RESULTS` via `computeArgFromResults()`. Panel read-only con chips:
+
+| Chip class | Significado |
+|---|---|
+| `.arg-status--won` | Ganó / clasificó en esa posición |
+| `.arg-status--lost` | Eliminada |
+| `.arg-status--pending` | Sin resultado aún |
+| `.arg-status--champion` | 🏆 Campeón |
+
+`.arg-prov` marca la posición en grupo como provisional si no se jugaron los 6 partidos.
 
 ### Render
 
@@ -299,11 +329,12 @@ El bracket es scroll horizontal. Dimensiones `BT` se recalculan por viewport en 
 
 ## Flujo de actualización de resultados
 
-1. Partido termina → abrir `admin.html` (o `localhost:XXXX/admin.html` en desarrollo)
+1. Partido termina → abrir `admin.html`
 2. Login con email/contraseña del usuario Firebase
-3. Ingresar scores en los inputs del grupo correspondiente
+3. Ingresar scores en los inputs del grupo o del bracket correspondiente
 4. "Guardar resultados" → se escribe en Firestore con timestamp
 5. El site público actualiza en el próximo load o auto-refresh de 5 minutos
+6. `resolveTeam()` + `computeArgFromResults()` actualizan bracket y panel de Argentina automáticamente
 
 ---
 
@@ -352,6 +383,7 @@ CDN: `flag-icons@7.2.3`. Uso: `<span class="fi fi-{code}"></span>`.
 - **Un solo documento Firestore (`results/current`):** toda la app lee y escribe un único doc. Simple, sin complejidad de colecciones.
 - **Admin como página separada (`admin.html`):** no contamina la URL del fixture público. Se accede directamente.
 - **`sessionStorage` para persistencia de tab:** persiste a través de refresh (misma sesión), se limpia al cerrar la pestaña. Por diseño, la URL pública siempre abre en Fase de Grupos.
+- **Sin `localStorage` para Argentina path:** el panel es read-only, estado derivado 100% de `window.RESULTS` en cada render. No hay estado del usuario que persistir.
 - **Inline script anti-FOUC en `<head>`:** único punto donde se puede ejecutar código antes del primer paint. Lee sessionStorage y setea `data-tab` en `<html>`. CSS lo usa para estado inicial. `activateTab()` lo limpia al tomar el control.
 - **`lucide.createIcons()` doble:** una vez antes del `await` (íconos estáticos del nav/header), otra después del render (íconos dinámicos en cards).
 - **Sin módulos ES:** scripts clásicos para no requerir servidor en desarrollo local (aunque Firebase requiere HTTP de todas formas).
@@ -363,12 +395,6 @@ CDN: `flag-icons@7.2.3`. Uso: `<span class="fi fi-{code}"></span>`.
 ---
 
 ## Backlog
-
-### Próximos pasos
-
-1. **Fase 1 bracket:** agregar inputs de resultados del bracket en `admin.html` — igual estructura que grupos, keys `"R32-1"`, `"R16-1"`, etc. en `window.RESULTS.bracket`
-2. **Fase 2 bracket:** `resolveTeam(label)` — convierte `"1A"` al equipo real vía `calcStandings`, `"G M73"` al ganador del partido
-3. **Fase 3 bracket:** Argentina path calculado automáticamente desde resultados reales
 
 ### Pendiente menor
 
