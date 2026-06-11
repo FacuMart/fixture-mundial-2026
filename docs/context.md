@@ -2,10 +2,11 @@
 
 ## Qué es
 
-Single Page Application para visualizar el fixture del FIFA World Cup 2026. Vanilla JS + CSS moderno, sin frameworks ni build step. Datos hardcodeados + resultados en `data/results.json`.
+Single Page Application para visualizar el fixture del FIFA World Cup 2026. Vanilla JS + CSS moderno, sin frameworks ni build step. Datos hardcodeados + resultados en Firebase Firestore.
 
 **Repo:** https://github.com/FacuMart/fixture-mundial-2026
 **GitHub Pages:** https://facumart.github.io/fixture-mundial-2026/
+**Admin:** https://facumart.github.io/fixture-mundial-2026/admin.html
 
 ---
 
@@ -19,18 +20,25 @@ Single Page Application para visualizar el fixture del FIFA World Cup 2026. Vani
 | Favicon con logo oficial FIFA 2026 | ✅ Completo |
 | Sistema de iconos Lucide (CDN) | ✅ Completo |
 | Header con logo + countdown + efectos | ✅ Completo |
+| Banderas en countdown (home flag · vs · away flag) | ✅ Completo — círculos 18px |
 | Fase de Grupos — vista general con animaciones | ✅ Completo |
 | Fase de Grupos — vista individual por grupo | ✅ Completo |
 | Bracket de Eliminatorias (visualización) | ✅ Completo — sin líneas conectoras, ver nota ⚠️ |
 | Camino de Argentina dinámico | ✅ Completo — panel con estado en localStorage |
-| Carga de resultados reales (`data/results.json`) | ✅ Completo |
+| Firebase Firestore — fuente de verdad de resultados | ✅ Completo |
+| Panel admin con login (Firebase Auth) | ✅ Completo — `admin.html` |
+| Carga de resultados de grupos desde admin | ✅ Completo |
 | Tabla de posiciones calculada | ✅ Completo — PJ/G/E/P/GF/GC/Pts desde resultados |
+| Tab nav con sessionStorage (refresh/cierre) | ✅ Completo |
+| FOUC del tab nav prevenido con inline script | ✅ Completo |
 | Diseño responsive (mobile-first) | ✅ Completo |
 | Resultados bracket con score + `.bt-completed` | ✅ Completo |
 | Reveal escalonado de cards + shimmer coordinado | ✅ Completo |
-| Fondo oscuro unificado en Fase de Grupos | ✅ Completo |
 | Auto-refresh cada 5 min + error handling visible | ✅ Completo |
-| Clasificación automática al bracket | ⬜ Pendiente |
+| Visibilidad de scores en partidos completados | ✅ Completo — fondo blanco, sin opacity en card |
+| Carga de resultados del bracket desde admin | ⬜ Pendiente (Fase 1 bracket) |
+| Resolución automática de equipos en bracket | ⬜ Pendiente (Fase 2 bracket) |
+| Argentina path automático desde resultados reales | ⬜ Pendiente (Fase 3 bracket) |
 | Filtro por equipo / selección | ⬜ Pendiente |
 
 > ✅ **Bracket completo:** Ronda de 32 (16 partidos, M73–M88) + Octavos (8) + Cuartos (4) + Semis (2) + Final + 3er puesto = **104 partidos totales** (72 grupos + 32 eliminatorias).
@@ -43,34 +51,131 @@ Single Page Application para visualizar el fixture del FIFA World Cup 2026. Vani
 
 ```
 fixture-mundial-2026/
-├── index.html                  ← entrada: HTML puro, sin lógica ni estilos inline
+├── index.html                  ← entrada principal
+├── admin.html                  ← panel de carga de resultados (requiere login)
 ├── assets/
-│   └── tournaments_fifa-world-cup-2026.football-logos.cc.svg  ← favicon + logo header
+│   └── tournaments_fifa-world-cup-2026.football-logos.cc.svg
 ├── css/
 │   ├── variables.css           ← design tokens (:root), regla .lucide, reset, body
-│   ├── layout.css              ← header (3 columnas, partículas, countdown), nav, footer, animaciones
-│   ├── groups.css              ← vista general y detalle de grupos; tabla de posiciones; sedes; results bar
-│   └── bracket.css             ← bracket eliminatorias, final, 3er puesto
+│   ├── layout.css              ← header, nav, footer, animaciones, estado inicial de tab
+│   ├── groups.css              ← vista general/detalle de grupos, tabla de posiciones, results bar
+│   ├── bracket.css             ← bracket eliminatorias, final, 3er puesto
+│   └── admin.css               ← estilos del panel admin (dark theme)
 ├── js/
+│   ├── firebase.js             ← init Firebase, loadResultsFromFirebase(), saveResultsToFirebase()
+│   ├── admin.js                ← lógica del panel admin: auth, render de inputs, guardar
 │   ├── data/
 │   │   ├── groups.js           ← constante GROUPS (12 grupos, 48 equipos, 72 partidos)
 │   │   └── bracket.js          ← constante BRACKET (ronda32 → octavos → cuartos → semis → final)
 │   ├── render/
 │   │   ├── groups.js           ← makeGroupCard() + makeGroupDetail() + renderGroups() + initGroupControls() + calcStandings()
 │   │   └── bracket.js          ← renderBracket()
-│   ├── header.js               ← initParticles() + initCountdown() (partículas y countdown Argentina)
-│   └── main.js                 ← async init + loadResults() + refreshResults() + activateTab() + lucide.createIcons()
+│   ├── header.js               ← initParticles() + initCountdown() con banderas en countdown
+│   └── main.js                 ← async init + loadResults() (Firebase) + refreshResults() + activateTab()
 ├── data/
-│   └── results.json            ← fuente de verdad de resultados (se edita manualmente y se pushea)
-├── docs/
-│   └── context.md              ← este archivo
-└── mundial2026.html            ← archivo original monolítico (backup de referencia)
+│   └── results.json            ← legacy, ya no se usa (reemplazado por Firestore)
+└── docs/
+    └── context.md              ← este archivo
 ```
 
 **Orden de carga de scripts en `index.html`:**
-`lucide CDN` → `header.js` → `data/groups.js` → `data/bracket.js` → `render/groups.js` → `render/bracket.js` → `main.js`
+Firebase CDN (app/auth/firestore compat) → `firebase.js` → `lucide CDN` → `header.js` → `data/groups.js` → `data/bracket.js` → `render/groups.js` → `render/bracket.js` → `main.js`
 
-`header.js` se carga primero porque no depende de ninguna constante de datos. `main.js` es un async IIFE que espera `loadResults()` antes de renderizar. Sin módulos ES para mantener compatibilidad con apertura directa en el navegador (en file:// el fetch falla silenciosamente y se usan resultados vacíos como fallback).
+**Orden de carga de scripts en `admin.html`:**
+Firebase CDN → `firebase.js` → `data/groups.js` → `admin.js`
+
+---
+
+## Firebase (`js/firebase.js`)
+
+Usa el SDK compat v9 de Firebase cargado desde CDN (scripts clásicos, sin build step).
+
+```js
+firebase.initializeApp(firebaseConfig);
+const db   = firebase.firestore();
+const auth = firebase.auth();
+
+async function loadResultsFromFirebase()       // lee results/current
+async function saveResultsToFirebase(data)     // escribe results/current
+```
+
+**Estructura del documento Firestore (`results/current`):**
+
+```json
+{
+  "updated": "2026-06-11T20:30:00.000Z",
+  "groups": {
+    "A-0": { "home": 2, "away": 1 },
+    "J-0": { "home": 3, "away": 0 }
+  },
+  "bracket": {}
+}
+```
+
+La clave de grupos es `"<letra>-<índice>"`, igual que antes con `results.json`.
+
+**Firestore Security Rules:**
+```
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /results/current {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+  }
+}
+```
+
+---
+
+## Panel Admin (`admin.html` + `js/admin.js` + `css/admin.css`)
+
+Página separada que requiere login con Firebase Auth (email/password). Solo el usuario creado en Firebase Console puede ingresar.
+
+### Flujo
+1. Abrir `admin.html` → si no está autenticado, muestra formulario de login
+2. Login con `auth.signInWithEmailAndPassword()` → `onAuthStateChanged` dispara → panel visible
+3. Carga los resultados actuales de Firestore → pre-rellena los inputs
+4. El admin edita scores (inputs numéricos por partido, organizados por grupo)
+5. "Guardar resultados" → `saveResultsToFirebase(localResults)` → Firestore actualizado
+6. El site público (`index.html`) lee de Firestore en el próximo load o auto-refresh
+
+### Estado local del admin
+`localResults` espeja la estructura de Firestore. Cada input `oninput` actualiza `localResults.groups[key]`. El botón "×" por partido limpia la clave del objeto.
+
+### FOUC en admin
+El panel usa `[hidden] { display: none !important; }` en `admin.css` para que el `hidden` attribute no sea sobreescrito por `display: flex` del `#login-section`.
+
+---
+
+## Tab Navigation (`js/main.js`)
+
+### Comportamiento
+- **Abrir página (URL limpia):** siempre muestra Fase de Grupos
+- **Navegar a Llaves:** guarda `'eliminatorias'` en `sessionStorage`
+- **Refrescar:** restaura el tab guardado en `sessionStorage`
+- **Cerrar pestaña y reabrir:** `sessionStorage` se limpia → vuelve a Fase de Grupos
+
+### Anti-FOUC (Flash of Unstyled Content)
+El HTML tiene hardcodeado el tab de grupos como activo. Al refrescar en Llaves, el browser pintaría grupos brevemente antes de que JS corrija el estado.
+
+**Solución:** inline `<script>` en `<head>` que corre antes del primer paint:
+```html
+<script>!function(){var t=sessionStorage.getItem('activeTab');document.documentElement.setAttribute('data-tab',t==='eliminatorias'?'eliminatorias':'grupos')}()</script>
+```
+
+CSS en `layout.css` usa `html[data-tab]` para mostrar el tab correcto desde el primer frame. Una vez que `activateTab()` corre (JS), remueve el atributo `data-tab` y toma el control con las clases `.active`.
+
+```css
+html[data-tab="grupos"]        .tab-btn[data-tab="grupos"]        { /* active styles */ }
+html[data-tab="eliminatorias"] .tab-btn[data-tab="eliminatorias"] { /* active styles */ }
+html[data-tab="grupos"]        #tab-grupos        { display: block; }
+html[data-tab="eliminatorias"] #tab-eliminatorias { display: block; }
+```
+
+### Íconos estáticos
+`lucide.createIcons()` se llama **antes** del `await loadResults()` para que los íconos del nav y header aparezcan inmediatamente, sin esperar a Firebase.
 
 ---
 
@@ -84,99 +189,34 @@ fixture-mundial-2026/
                   [ badge 48 equipos ]
 ```
 
-HTML:
-```html
-<header class="site-header">
-  <div class="header-particles" id="header-particles"></div>
-  <div class="header-inner">
-    <div class="header-logo-side">
-      <img class="header-logo" src="assets/tournaments_fifa-world-cup-2026...svg">
-    </div>
-    <div class="header-center"> ... </div>
-    <div class="header-countdown-side"> ... </div>
-  </div>
-</header>
-```
-
-### Efectos del header
-
-| Efecto | Implementación |
-|---|---|
-| Gradiente animado de fondo | `background-size: 300%` + `@keyframes headerGradient` (14s) |
-| Glow dorado superior | `::before` radial-gradient con `@keyframes glowPulse` (5s) |
-| Sweep de luz diagonal | `::after` con `@keyframes headerSweep` (8s) |
-| 30 partículas doradas ascendentes | JS en `header.js` crea `<div class="hparticle">` con posición/tamaño/delay random; `@keyframes particleRise` |
-| Logo: entrada spring | `cubic-bezier(0.34,1.56,0.64,1)` — overshoot suave |
-| Trofeo: anillos orbitales | `::before` (trazos punteados, 10s CW) + `::after` (dos arcos, 6s CCW) en `.bt-trophy-wrap`; el trofeo flota dentro con z-index 1 |
-| Logo: flotación loop | `@keyframes logoFloat` (5s, ±7px vertical) |
-| Logo: hover glow | `filter: drop-shadow` dorado intenso en `:hover` |
-| "WORLD CUP": shimmer | `background-clip: text` + `-webkit-text-fill-color: transparent` + `@keyframes titleShimmer` (4s) |
-| Badge: pulso de sombra | `@keyframes badgePulse` (3s, box-shadow expansiva) |
-
-### Countdown (`js/header.js`)
+### Countdown con banderas (`js/header.js`)
 
 Partidos de Argentina en UTC (datos hardcodeados, ARG = UTC-3):
 
 ```js
 const ARG_MATCHES = [
-  { label: 'Argentina vs Argelia',  info: '16 jun · 22:00 ARG', start: new Date('2026-06-17T01:00:00Z') },
-  { label: 'Argentina vs Austria',  info: '22 jun · 14:00 ARG', start: new Date('2026-06-22T17:00:00Z') },
-  { label: 'Jordania vs Argentina', info: '27 jun · 23:00 ARG', start: new Date('2026-06-28T02:00:00Z') },
+  { home: { name: 'Argentina', flag: 'ar' }, away: { name: 'Argelia',  flag: 'dz' }, info: '16 jun · 22:00 ARG', start: new Date('2026-06-17T01:00:00Z') },
+  { home: { name: 'Argentina', flag: 'ar' }, away: { name: 'Austria',  flag: 'at' }, info: '22 jun · 14:00 ARG', start: new Date('2026-06-22T17:00:00Z') },
+  { home: { name: 'Jordania',  flag: 'jo' }, away: { name: 'Argentina',flag: 'ar' }, info: '27 jun · 23:00 ARG', start: new Date('2026-06-28T02:00:00Z') },
 ];
 ```
 
+`matchHTML(m)` genera: `🇦🇷 Argentina <vs> Argelia 🇩🇿` (bandera home a la izquierda, bandera away a la derecha del nombre away).
+
+Banderas renderizadas como **círculos** de 18×18px con `border-radius: 50%` y `background-position: center`.
+
 - `tick()` corre cada 1 segundo con `setInterval`
-- `setDigit(el, val)` — actualiza el texto y re-dispara `@keyframes digitFlip` (slide-in desde abajo) via `void el.offsetHeight`
-- El partido se muestra en dos líneas: `#countdown-match` (nombre del partido) y `#countdown-info` (fecha/hora) centrados
-- Si el partido está en curso (`now` entre `start` y `start + 2h`): muestra `● EN JUEGO` con punto rojo pulsante
-- Si todos los partidos pasaron: muestra "Fase Eliminatoria / Grupos completados ✓"
-- Los `:` separadores parpadean con `@keyframes sepBlink`
-- **Responsive:** se oculta en `< 420px`; se centra en `< 860px`; el logo se oculta en `< 860px`
-
-**Breakpoints del header:**
-
-| Ancho | Comportamiento |
-|---|---|
-| > 860px | 3 columnas completas (logo + centro + countdown) |
-| ≤ 860px | Logo oculto; countdown inline centrado |
-| ≤ 600px | Header apilado verticalmente (`flex-direction: column`), padding reducido |
-| ≤ 420px | Countdown oculto; solo centro; título con `clamp` más pequeño |
+- Si el partido está en curso: muestra `● EN JUEGO`
+- Si todos los partidos pasaron: "Fase Eliminatoria / Grupos completados ✓"
+- **Responsive:** se oculta en `< 420px`; se centra en `< 860px`
 
 ---
 
 ## Fase de Grupos (`js/render/groups.js` + `css/groups.css`)
 
-### Dos vistas con toggle
-
-```
-[ Todos los grupos ]  [ Por grupo ]    [A][B][C][D][E][F][G][H][I][J][K][L]
-```
-
-El toggle y los pills son generados y gestionados por `initGroupControls()`. Estado en dos variables de módulo:
-- `groupView`: `'general'` | `'individual'`
-- `selectedLetter`: letra del grupo activo (default `'J'` — Argentina)
-
-Cada pill muestra el color del grupo cuando está activa (inline style). `lucide.createIcons()` se llama después de cada cambio de vista para procesar los nuevos `data-lucide`.
-
 ### Sistema de resultados
 
-`data/results.json` es la fuente de verdad. Estructura:
-
-```json
-{
-  "updated": "2026-06-11T20:30:00Z",
-  "groups": {
-    "A-0": { "home": 2, "away": 1 },
-    "A-1": { "home": 0, "away": 0 }
-  },
-  "bracket": {}
-}
-```
-
-- La clave es `"<letra>-<índice>"` donde el índice es la posición del partido en `group.matches` (0–5).
-- Para agregar un resultado: editar el JSON y hacer push a GitHub. En el site, el usuario puede pulsar "Actualizar" para refrescar sin recargar la página.
-
-**Funciones clave en `render/groups.js`:**
+`window.RESULTS` se carga desde Firestore en `loadResults()` antes del primer render. Estructura idéntica a la que tenía `data/results.json`.
 
 ```js
 function getResult(letter, index) {
@@ -184,234 +224,86 @@ function getResult(letter, index) {
 }
 
 function calcStandings(letter, group) {
-  // Calcula PJ/G/E/P/GF/GC/Pts para cada equipo del grupo
-  // a partir de los resultados disponibles en window.RESULTS
+  // Calcula PJ/G/E/P/GF/GC/Pts desde window.RESULTS
   // Ordena por: Pts → DG → GF
-  // Devuelve array de equipos ordenados (misma forma que group.teams + stats)
 }
 ```
 
-**`window.RESULTS`** se carga en `main.js` con `loadResults()` antes del primer render. Los renders de grupos leen de ahí directamente — no hay estado adicional.
+### Dos vistas con toggle
+
+```
+[ Todos los grupos ]  [ Por grupo ]    [A][B][C][D][E][F][G][H][I][J][K][L]
+```
+
+- `groupView`: `'general'` | `'individual'`
+- `selectedLetter`: default `'J'` (Argentina)
 
 ### Vista general — `makeGroupCard(letter, group)`
 
-Tarjeta compacta con:
-1. `.group-header` — gradiente con `group.color`
-2. `.group-teams` — lista de 4 equipos con flags y badge campeón
-3. `.group-matches` — 6 `.match-card` con score real si existe, o `– : –`
-
-Partidos con resultado: clase `.match-completed` (opacidad 0.82, equipo en `text-muted`) + `.match-score.completed` (score en bold).
-
-**Efecto:** `@keyframes cardEntrance` (fade + scale desde 0.97) con `animation-delay` escalonado de 45ms por card (la A sale primero, la L última).
+Tarjeta compacta: header con color del grupo → lista de equipos → 6 partidos con score real o `– : –`. Animación de entrada escalonada de 45ms por card.
 
 ### Vista individual — `makeGroupDetail(letter, group)`
 
-Panel expandido (max-width 780px, centrado) con 4 secciones:
+Panel expandido con: header · (equipos | tabla de posiciones) · partidos del grupo · sedes.
 
-**1. Header expandido**
-- Letra gigante (2.6rem), nombre del grupo, subtítulo "FIFA WORLD CUP 2026"
-- `@keyframes detailHeaderPulse` — brightness oscila entre 1 y 1.1 cada 5s usando el color del grupo
+**Tabla de posiciones:** usa `calcStandings()`. Posiciones 1–2 en círculo azul FIFA. Fila Argentina en celeste.
 
-**2. Fila superior (2 columnas)**
+**Estado de partidos:** `.match-completed` / `.next-match` / `.live-match` / `.argentina-match`.
 
-| Columna izquierda | Columna derecha |
-|---|---|
-| **Equipos** — flags + nombres (fila de Argentina con fondo celeste) | **Clasificación** — tabla PJ/G/E/P/GF/GC/Pts calculada con `calcStandings()` |
+- `.match-score.completed` → fondo `rgba(255,255,255,0.92)` + texto `var(--text-main)` + sombra sutil. Sin opacity en la card ni en los elementos hijos.
 
-Tabla de posiciones:
-- Usa `calcStandings(letter, group)` — datos reales si hay resultados, ceros si no
-- El orden de filas refleja la tabla real (mejor pts primero), no el orden del sorteo
-- Posiciones 1 y 2 tienen número en círculo azul FIFA (`.pos-qualifies`)
-- Fila de Argentina con fondo celeste (`var(--arg-accent)`)
-- Nota "Los 2 primeros clasifican" con icono `arrow-up-circle` verde
+---
 
-**3. Partidos del grupo**
+## Bracket (`js/data/bracket.js` + `js/render/bracket.js` + `css/bracket.css`)
 
-Los 6 partidos en formato amplio. El siguiente partido cronológico se detecta comparando `Date.now()` contra `parseMatchUTC(m.date, m.time)`:
+### Estructura de datos
 
 ```js
-function parseMatchUTC(dateStr, timeStr) {
-  const [day, mon] = dateStr.trim().split(' ');
-  const [h, m]     = timeStr.trim().split(':');
-  return new Date(Date.UTC(2026, MONTH_MAP[mon], +day, +h + 3, +m));
+BRACKET = {
+  ronda32: [ { id, label, home, away, date, isArgPath } ],  // M73–M88
+  octavos: [ ... ],  // O1–O8
+  cuartos: [ ... ],  // C1–C4
+  semis:   [ ... ],  // SF1–SF2
+  final:   { home, away, date, stadium },
+  tercero: { home, away, date, stadium },
 }
 ```
 
-- **Completado:** `.match-completed` + score en bold — no puede ser "próximo"
-- **Próximo partido:** borde dorado + fondo cálido + badge `⚡ Próximo` parpadeante (`.next-match`) — solo si sin resultado y aún no jugado
-- **En vivo** (dentro de las 2h del inicio, sin resultado): badge `● EN JUEGO` con punto rojo pulsante (`.live-match`)
-- Los partidos de Argentina mantienen el borde y fondo celeste (`.argentina-match`)
+`home`/`away` son slots (`'1J'`, `'G M85'`), no equipos reales aún.
 
-**4. Sedes del grupo**
+**Camino Argentina:**
+- 1°J: R32-14 → R16-7 → QF-4 → SF-2
+- 2°J: R32-12 → R16-6 → QF-3 → SF-2 (misma semi)
 
-Cards con ciudad + nombre del estadio, deduplicadas por ciudad.
+### Plan de evolución del bracket
 
-### Responsive de grupos
+| Fase | Descripción | Estado |
+|---|---|---|
+| Fase 1 | Inputs en admin para resultados del bracket | ⬜ Pendiente |
+| Fase 2 | `resolveTeam("1A")` → nombre real desde calcStandings; `resolveTeam("G M73")` → ganador del match | ⬜ Pendiente |
+| Fase 3 | Argentina path automático desde resultados reales (reemplaza el panel manual) | ⬜ Pendiente |
 
-| Breakpoint | Cambio |
-|---|---|
-| ≤ 700px | `.detail-top-row` apila columnas verticalmente; `border-right` → `border-bottom` |
-| ≤ 700px | `.detail-matches .match-info` pasa a `flex-wrap: wrap`; sedes en columna |
-| ≤ 500px | Columna GC oculta en tabla de posiciones; results bar apilada; pills más pequeñas |
+### Render
 
-### Barra de resultados (`.results-bar`)
+El bracket es scroll horizontal. Dimensiones `BT` se recalculan por viewport en cada `renderBracket()`:
 
-Aparece arriba del toggle de vistas en la sección Fase de Grupos:
-
-```html
-<div class="results-bar">
-  <span id="results-updated">Cargando resultados…</span>
-  <button id="refresh-btn"><i data-lucide="refresh-cw"></i> Actualizar</button>
-</div>
-```
-
-- Muestra el timestamp del último `updated` en `results.json` (formato local es-AR)
-- El botón llama `refreshResults()` que re-fetcha el JSON y re-renderiza grupos + bracket
-- Durante la carga: el icono del botón gira con `@keyframes spinIcon` (clase `.spinning`)
-
----
-
-## Bracket — Visual Design (`css/bracket.css`)
-
-### Fondo oscuro de la sección eliminatorias
-
-`#tab-eliminatorias` tiene un fondo navy oscuro con brillo azul:
-
-```css
-#tab-eliminatorias {
-  background:
-    radial-gradient(ellipse at 50% 42%, rgba(0,51,160,0.22) 0%, transparent 58%),
-    linear-gradient(170deg, #0D1B3E 0%, #060E22 100%);
-  border-radius: var(--radius);
-  padding-bottom: 36px;
-  box-shadow: 0 8px 48px rgba(0,0,0,0.35);
-}
-```
-
-Todos los textos secundarios del bracket (`.arg-panel`, `.bt-col-title`, `.bracket-scroll-hint`) tienen overrides para ser legibles sobre este fondo oscuro (colores en blanco semitransparente).
-
-### Cards del bracket (`.bt-match`)
-
-Fondo azul FIFA oscuro con gradiente:
-
-```css
-.bt-match {
-  background: linear-gradient(135deg, #0D2A6E 0%, #091E52 100%);
-  overflow: hidden; /* necesario para clipear el shimmer ::before */
-}
-.bt-label  { background: rgba(0,0,0,0.22); color: rgba(255,255,255,0.38); }
-.bt-team   { color: rgba(255,255,255,0.55); border-bottom: 1px solid rgba(255,255,255,0.07); }
-.bt-date   { color: rgba(255,255,255,0.32); background: rgba(0,0,0,0.18); }
-.bt-match.bt-arg .bt-team { color: var(--arg-blue); }
-```
-
-### Animación shimmer (`.bt-match::before`)
-
-Barrido de luz diagonal que se repite cada 5s. El pseudo-elemento es un gradiente lineal diagonal que viaja de izquierda a derecha (o derecha a izquierda en la mitad derecha del bracket):
-
-```css
-.bt-match::before {
-  content: '';
-  position: absolute; inset: 0;
-  background: linear-gradient(105deg,
-    transparent 30%, rgba(255,255,255,0.32) 50%, transparent 70%);
-  transform: translateX(-120%);
-  animation: btCardShimmer 5s ease var(--shimmer-delay, 0.5s) infinite;
-}
-@keyframes btCardShimmer {
-  0%   { transform: translateX(-120%); }
-  13%  { transform: translateX(220%); }
-  100% { transform: translateX(220%); }
-}
-```
-
-- **Delay por columna:** `--shimmer-delay` se setea con `card.style.setProperty('--shimmer-delay', ...)` en `makeBtColumn()`. Las columnas más cercanas al centro del bracket tienen mayor delay, creando efecto de luz que emana del centro.
-- **Dirección RTL para mitad derecha:** la clase `.bt-shimmer-rtl` se agrega vía JS (`if (rtl) card.classList.add('bt-shimmer-rtl')`) y la regla CSS usa `animation-direction: reverse` para invertir el barrido sin duplicar el keyframe.
-- **`overflow: hidden` es crítico:** sin él el pseudo-elemento es visible fuera de la card.
-
-### Tercer y cuarto puesto (`.bt-third-card`)
-
-Estilo dorado oscuro para distinguirlo del bracket estándar:
-
-```css
-.bt-third-title { color: var(--gold-dark); }
-.bt-third-card {
-  background: linear-gradient(135deg, #2C1F00 0%, #1A1200 100%);
-  border: 1.5px solid rgba(201,168,0,0.45);
-  box-shadow: 0 0 14px rgba(201,168,0,0.18);
-}
-.bt-third-card .bt-team { color: rgba(255,215,0,0.62); }
-.bt-third-card .bt-date { color: rgba(255,215,0,0.38); }
-```
-
-### Centro del bracket (`.bt-center` + `.bt-trophy-wrap`)
-
-El trofeo se posiciona al **tope** de la columna central (no centrado verticalmente), para que quede por encima de las cards de los semifinalistas:
-
-```css
-.bt-center {
-  justify-content: flex-start;  /* antes: center */
-  padding: 44px 12px 0;         /* antes: padding-bottom: 200px */
-}
-.bt-trophy-wrap { margin-bottom: 28px; }
-```
-
-**Por qué `margin-bottom: 28px`:** El anillo orbital exterior del trofeo mide 104px. La imagen del trofeo mide 68px. El anillo se extiende `(104-68)/2 = 18px` por debajo del borde de la imagen. Sin margen suficiente, el anillo superpone el texto "LA GRAN FINAL". Con `28px` hay ~10px de clearance visual.
-
----
-
-## Bracket — Responsive (`css/bracket.css` + `js/render/bracket.js`)
-
-El bracket es inherentemente ancho (4 rondas × 2 lados + centro). El enfoque es **scroll horizontal con momentum**, no una vista alternativa. No se puede mostrar un bracket simétrico de 8 columnas en 390px sin scroll.
-
-### Dimensiones adaptativas (`BT` en `render/bracket.js`)
-
-`BT` es un objeto `let` que se actualiza al inicio de cada `renderBracket()` según `window.innerWidth`:
-
-| Viewport | H (card height) | CW (col width) | Ancho total aprox. |
+| Viewport | H | CW | Ancho total aprox. |
 |---|---|---|---|
 | ≥ 900px | 90px | 128px | ~1370px |
 | 600–899px | 78px | 110px | ~1160px |
 | < 600px | 68px | 92px | ~990px |
 
-`BT.CG` (gap entre columnas) está definido pero no se usa en JS — el gap real es el CSS `gap` de `.bt-half`, que se ajusta vía media queries.
-
-### Hint de scroll
-
-```html
-<div class="bracket-scroll-hint">
-  <i data-lucide="move-horizontal"></i> Deslizá para ver el bracket completo
-</div>
-```
-
-- Visible en pantallas < 1300px (media query en CSS)
-- Se desvanece automáticamente con `@keyframes hintFade` (4s delay, fade a 0)
-
-### Breakpoints del bracket
-
-| Breakpoint | Cambio |
-|---|---|
-| ≤ 1300px | Hint de scroll visible |
-| ≤ 900px | `.bt-half gap: 14px`; centro 175px; trofeo 56px; botones arg más grandes |
-| ≤ 600px | `.bt-half gap: 8px`; centro 130px; trofeo 44px; anillos orbitales escalados; arg panel apilado verticalmente con botones táctiles (6×12px) |
-
-### Scrolling táctil
-
-`.bracket-wrapper` tiene `-webkit-overflow-scrolling: touch` para momentum scroll en iOS. `.bracket-container` usa `width: max-content` en lugar de `min-width: 1370px` fijo, dejando que el contenido JS controle el ancho real.
-
-### Arg panel en mobile (< 600px)
-
-Los pasos (Grupo J → R32 → Octavos → ...) se apilan verticalmente. Los separadores `›` se ocultan. Los botones pasan a `padding: 6px 12px; font-size: 0.7rem` para cumplir tamaño mínimo táctil recomendado.
+**Animaciones:** reveal escalonado (R32→Oct→QF→SF, ambas mitades simultáneas, delay = roundIndex×180 + cardIndex×40ms) → `.bt-shimmer-active` al wrapper 350ms después.
 
 ---
 
 ## Flujo de actualización de resultados
 
-1. Partido termina → editar `data/results.json` con la nueva clave `"X-N": { "home": a, "away": b }`
-2. Actualizar el campo `"updated"` al timestamp actual
-3. `git add data/results.json && git commit -m "resultados" && git push`
-4. GitHub Pages actualiza en ~1 min
-5. El usuario pulsa "Actualizar" en el site (o recarga) — `loadResults()` hace `fetch('data/results.json?t=<now>')` con cache-busting
+1. Partido termina → abrir `admin.html` (o `localhost:XXXX/admin.html` en desarrollo)
+2. Login con email/contraseña del usuario Firebase
+3. Ingresar scores en los inputs del grupo correspondiente
+4. "Guardar resultados" → se escribe en Firestore con timestamp
+5. El site público actualiza en el próximo load o auto-refresh de 5 minutos
 
 ---
 
@@ -421,19 +313,12 @@ Los pasos (Grupo J → R32 → Octavos → ...) se apilan verticalmente. Los sep
 
 ```js
 GROUPS = {
-  A: {
-    color: '#E53E3E',
-    teams: [ { name, flag, isArgentina } ],
-    matches: [ { home, away, date, time, stadium, city } ]
-  },
+  A: { color: '#E53E3E', teams: [...], matches: [...] },
   // B … L
 }
 ```
 
-- 12 grupos (A–L), 4 equipos, 6 partidos por grupo = 72 partidos
-- Equipos del sorteo oficial FIFA (Kennedy Center, 5 dic 2025)
-- Horarios en **Argentina (UTC-3)**
-- `isArgentina: true` solo en el equipo Argentina (Grupo J)
+12 grupos (A–L), 4 equipos, 6 partidos por grupo = 72 partidos. Horarios en ARG (UTC-3).
 
 **Grupo J — Argentina:**
 ```
@@ -445,232 +330,74 @@ GROUPS = {
 27 jun 23:00 — Jordania vs Argentina   — AT&T Stadium, Arlington
 ```
 
-### Bracket (`js/data/bracket.js`)
-
-```js
-BRACKET = {
-  ronda32: [ { id, label, home, away, date, isArgPath } ],  // 16 partidos M73–M88
-  octavos: [ ... ],  // 8
-  cuartos: [ ... ],  // 4
-  semis:   [ ... ],  // 2
-  final:   { home, away, date, stadium },
-  tercero: { home, away, date, stadium },
-}
-```
-
-- `home`/`away` son slots (`'1J'`, `'G M85'`, etc.), no equipos reales
-- `isArgPath` en los datos es referencia documental; el render lo ignora — la clase `.bt-arg` la gestiona `applyArgPath()` en `render/bracket.js`
-- **Camino Argentina si termina 1°J:** R32-14 → R16-7 → QF-4 → SF-2
-- **Camino Argentina si termina 2°J:** R32-12 → R16-6 → QF-3 → SF-2 (misma semi)
-- **Final:** MetLife Stadium, East Rutherford (19 jul)
-- **3er puesto:** Hard Rock Stadium, Miami (18 jul)
-
 ---
 
 ## Banderas — flag-icons
 
-CDN: `<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flag-icons@7.2.3/css/flag-icons.min.css">`
+CDN: `flag-icons@7.2.3`. Uso: `<span class="fi fi-{code}"></span>`.
 
-Uso: `<span class="fi fi-{code}"></span>` donde `{code}` es el ISO 3166-1 alpha-2 del país (ej: `ar`, `br`, `gb-sct` para Escocia, `gb-eng` para Inglaterra).
-
-Helper en `render/groups.js`: `flagImg(code)` genera el HTML del span.
-
-El campo `flag` en `js/data/groups.js` almacena el código ISO (no el emoji).
-
-**Tamaños por contexto (todos con `background-size: cover`, proporción 4:3, sin border-radius, `border: 1px solid rgba(0,0,0,0.18)`):**
-
-| Contexto | Clase CSS | Dimensiones |
+| Contexto | Dimensiones | Shape |
 |---|---|---|
-| Team rows (vista general/detalle) | `.team-flag .fi` | 24×18px |
-| Vista detalle ampliada | `.detail-col .team-flag .fi` | 28×21px |
-| Match cards | `.match-team .fi` | 18×14px |
-| Tabla de posiciones | `.standings-table .td-team .fi` | 20×15px |
-| Header anfitriones | `.header-hosts .fi` | 40×30px |
-
----
-
-## Sistema de iconos — Lucide
-
-CDN: `<script src="https://unpkg.com/lucide@latest"></script>`
-
-`lucide.createIcons()` se llama en `main.js` después del render inicial, en `initGroupControls()` después de cada cambio de vista, y en `refreshResults()` tras re-renderizar.
-
-**Mapa de iconos:**
-
-| `data-lucide` | Dónde |
-|---|---|
-| `circle-dot` | Header badge |
-| `layout-grid` | Tab grupos / toggle vista general |
-| `zoom-in` | Toggle vista por grupo |
-| `trophy` | Tab eliminatorias, encabezado Final |
-| `star` | Badge campeón Argentina (×3) |
-| `flag` | Fallback bandera de equipo |
-| `calendar` / `calendar-days` | Fecha de partidos |
-| `building-2` | Estadio |
-| `map-pin` / `map` | Ciudad / Sedes |
-| `minus` | Slots TBD en bracket |
-| `medal` | 3er y 4to puesto |
-| `users` | Sección equipos (detalle) |
-| `bar-chart-2` | Sección clasificación (detalle) |
-| `arrow-up-circle` | Nota "clasifican" (detalle) |
-| `zap` | Badge "Próximo" partido |
-| `check-circle` | Grupos completados |
-| `refresh-cw` | Botón Actualizar resultados |
-| `move-horizontal` | Hint de scroll del bracket |
-
----
-
-## Estilos
-
-### Design tokens (`css/variables.css`)
-
-| Variable | Valor | Uso |
-|---|---|---|
-| `--fifa-blue` | `#0033A0` | Color primario |
-| `--gold` / `--gold-dark` | `#FFD700` / `#C9A800` | Acentos dorados |
-| `--bg` | `#F5F7FA` | Fondo de página |
-| `--surface` | `#FFFFFF` | Cards |
-| `--border` | `#E2E8F0` | Bordes |
-| `--text-main` / `--text-muted` / `--text-light` | — | Jerarquía de texto |
-| `--arg-blue` / `--arg-blue-dk` | `#74ACDF` / `#4A8FC0` | Acento albiceleste |
-| `--arg-accent` | `rgba(116,172,223,0.15)` | Fondo partidos/filas Argentina |
-| `--shadow-sm/md/hover` | — | Sombras |
-| `--radius` / `--radius-sm` | `12px` / `8px` | Border radius |
-| `--transition` | `0.22s ease` | Transiciones globales |
-
-### Clases clave
-
-| Clase | Archivo | Descripción |
-|---|---|---|
-| `.lucide` | `variables.css` | Base de todos los iconos Lucide |
-| `.argentina-match` | `groups.css` | Borde celeste + fondo suave |
-| `.next-match` | `groups.css` | Borde dorado + fondo cálido + badge parpadeante |
-| `.live-match` | `groups.css` | Borde rojo + badge EN JUEGO con punto pulsante |
-| `.match-completed` | `groups.css` | Partido terminado: opacidad reducida, score en bold |
-| `.match-score.completed` | `groups.css` | Score numérico en bold, color `text-main` |
-| `.results-bar` | `groups.css` | Barra de timestamp + botón Actualizar |
-| `.results-refresh-btn.spinning` | `groups.css` | Icono girando durante el fetch |
-| `.champion-badge` | `groups.css` | Badge ★★★ Campeón |
-| `.bt-arg` | `bracket.css` | Ring celeste en camino de Argentina (aplicado dinámicamente) |
-| `.bt-shimmer-rtl` | `bracket.css` | Shimmer direction reverse en cards de la mitad derecha del bracket |
-| `.bt-third-card` | `bracket.css` | Card 3er/4to puesto con fondo y bordes dorados |
-| `.arg-panel-inner` | `bracket.css` | Panel de seguimiento del camino de Argentina |
-| `.arg-btn` / `.arg-btn-elim` | `bracket.css` | Botones del panel (activo celeste / eliminado rojo) |
-| `.tbd` | `bracket.css` | Slots vacíos del bracket |
-| `.detail-top-row` | `groups.css` | Flex de 2 columnas en vista individual |
-| `.standings-table` | `groups.css` | Tabla de posiciones (calculada con `calcStandings()`) |
-| `.sede-item` | `groups.css` | Card de ciudad + estadio |
-| `.header-countdown-side` | `layout.css` | Columna derecha del header (centrada) |
-| `.hparticle` | `layout.css` | Partícula dorada flotante |
-| `.bracket-scroll-hint` | `bracket.css` | Hint "deslizá" visible < 1300px, se desvanece con CSS |
-
----
-
-## Errores corregidos
-
-### Auditoría de código (ronda 1)
-
-| Archivo | Error | Fix |
-|---|---|---|
-| `js/data/groups.js` | `city: 'Dallas'` en AT&T Stadium | → `'Arlington'` |
-| `css/variables.css` | Variables `--g-A` a `--g-L` sin usar | Eliminadas |
-| `css/bracket.css` | `.bracket-connector` sin elemento que la use | Eliminada |
-| `css/bracket.css` | `min-width: 900px` para 5 columnas | → `1200px` |
-| `js/render/bracket.js` + `css/bracket.css` + `js/main.js` | Líneas conectoras SVG entre rondas | Eliminadas — bracket sin líneas |
-| `index.html` | Botones de nav sin `type="button"` | Corregido |
-| `index.html` | `<nav>` sin `aria-label` | Agregado |
-| `js/main.js` | `rAF` para re-trigger de animación | → `void offsetHeight` (reflow síncrono) |
-
-### Verificación de datos (ronda 2)
-
-| Área | Error | Fix |
-|---|---|---|
-| Grupo D | `Rep. Europeo C` placeholder | → `Türkiye` 🇹🇷 |
-| Grupo F | `Rep. Europeo B` + 6 partidos incorrectos | → `Suecia` 🇸🇪 + datos reescritos |
-| Grupo I | `Rep. FIFA Playoff 2` + 6 partidos incorrectos | → `Noruega` 🇳🇴 + datos reescritos |
-| Grupo J | 5 de 6 partidos con datos incorrectos | Reescritos (1er: 16 jun KC) |
-| Grupo K | `Rep. Congo` ambiguo | → `RD Congo` 🇨🇩 |
-| Múltiples grupos | Denver/Empower Field como sede | Eliminado — Denver no es sede |
-| Bracket | Solo 8 "octavos" para 32 clasificados | → Ronda de 32 (16 partidos M73–M88) |
-| Bracket | Argentina: `1J vs 2I`, 2 jul | → `1J vs 2H`, 3 jul, Hard Rock Miami |
-| Bracket | 3er puesto: AT&T Arlington | → Hard Rock Stadium, Miami |
-
-**Sedes con `// ⚠️` en el código (estimadas, no verificadas oficialmente):**
-- Grupo B: Suiza vs Canadá (25 jun) — Arrowhead Stadium, KC
-- Grupo G: Irán vs Nueva Zelanda (16 jun) — NRG Stadium, Houston
-- Grupo G: Egipto vs Irán (26 jun) — NRG Stadium, Houston
+| Team rows (vista general/detalle) | 24×18px | rect |
+| Match cards | 18×14px | rect |
+| Tabla de posiciones | 20×15px | rect |
+| Header anfitriones | 40×30px | rect |
+| Countdown Argentina | 18×18px | círculo |
 
 ---
 
 ## Decisiones de diseño
 
-- **Sin módulos ES:** scripts clásicos para abrir `index.html` directo sin servidor.
-- **DOM imperativo:** `createElement` en JS, sin templates HTML, para facilitar futura generación con datos reales.
-- **Títulos de columna del bracket posicionados dinámicamente:** `bt-col-title` no tiene `top` fijo en CSS; `makeBtColumn()` calcula `top = firstCardCenter - H/2 - 22px` para que cada título quede pegado al primer card de su columna (R32, Octavos, Cuartos, Semis).
-- **Datos separados del render:** `js/data/` exporta constantes; `js/render/` las consume. Los resultados viven en `data/results.json` y se leen de `window.RESULTS` en render time.
-- **`lucide.createIcons()` múltiple:** se llama en el render inicial, en cada cambio de vista de grupos, y en `refreshResults()`.
-- **Countdown hardcodeado en UTC:** las fechas de Argentina se definen como `new Date('...Z')` en `header.js` para no depender de parsing de strings ni zona horaria del navegador.
-- **parseMatchUTC en render:** la detección de "próximo partido" en la vista individual usa la misma lógica de conversión ARG→UTC, centralizada en `parseMatchUTC()` dentro de `render/groups.js`.
-- **Hash de URL para persistencia de pestaña:** `location.hash` guarda la pestaña activa (`#grupos` / `#eliminatorias`). Al cargar, `main.js` lee el hash y restaura la pestaña sin animación.
-- **`mundial2026.html` preservado:** backup del archivo monolítico original.
-- **Camino de Argentina calculado dinámicamente:** `isArgPath` en los datos ya no se usa para el render. `computeArgIds(state)` devuelve un `Set` de IDs a pintar según posición y resultados guardados en `localStorage` (`arg_bracket`). `applyArgPath()` aplica/quita `.bt-arg` sin re-renderizar el árbol. Ambas rutas confluyen en SF-2.
-- **Resultados estáticos en JSON:** se eligió `data/results.json` como fuente de verdad (sin API) por costo cero, sin rate limits, funcionamiento offline, y control total del dato. El workflow es: editar JSON → push → GitHub Pages. Las APIs de fútbol disponibles (api-football.com, football-data.org) no tenían cobertura confiable del WC 2026 al momento de evaluar.
-- **Cache-busting en fetch:** `loadResults()` agrega `?t=<Date.now()>` a la URL para evitar que el browser sirva el JSON antiguo tras un push.
-- **Bracket responsive sin vista alternativa:** el bracket simétrico de 8 columnas no puede mostrarse sin scroll en pantallas < 1300px. Se optó por scroll horizontal con momentum (`-webkit-overflow-scrolling: touch`) + hint visual que se desvanece, en lugar de un layout alternativo que rompería la simetría visual. Las dimensiones `BT` se reducen por viewport para minimizar el ancho total (~990px en mobile vs ~1370px en desktop).
-- **Tab nav con overflow-x scroll:** en lugar de `flex-wrap` (que causaría línea doble), la barra de tabs usa `overflow-x: auto; scrollbar-width: none` para que se desplace horizontalmente si los botones no caben. En la práctica con 2 tabs siempre caben, pero es a prueba de futuras extensiones.
-- **GC oculta en tabla mobile:** en < 500px se oculta la columna "Goles en contra" de la standings table para que las 8 columnas restantes quepan sin reducir la legibilidad excesivamente.
-- **Reveal del bracket via clase:** las cards arrancan `opacity: 0`. `revealBracketCards()` agrega `.bt-revealed` con stagger → dispara `btMatchEntrance`. 350ms después del último reveal agrega `.bt-shimmer-active` al `#bt-wrapper`. Este ciclo se resetea en cada activación de la tab de Llaves y en `refreshResults()`.
-- **Final alineada dinámicamente:** `adjustFinalPosition(pos)` en `render/bracket.js` calcula `margin-top` del `.bt-final-block` para que el card de la Final quede al mismo nivel Y que `pos.sf[0]`. Se recalcula en cada `renderBracket()`.
-- **Auto-refresh de resultados:** `setInterval(refreshResults, 5min)` activo en `init()`. No requiere intervención del usuario durante partidos en vivo.
-- **Error handling visible:** `loadResults()` valida `res.ok` y actualiza el texto del elemento `#results-updated` con `'Error al cargar resultados'` si el fetch falla.
+- **Firebase compat SDK (v9):** scripts clásicos, sin build step ni npm. Compatible con GitHub Pages tal cual.
+- **Un solo documento Firestore (`results/current`):** toda la app lee y escribe un único doc. Simple, sin complejidad de colecciones.
+- **Admin como página separada (`admin.html`):** no contamina la URL del fixture público. Se accede directamente.
+- **`sessionStorage` para persistencia de tab:** persiste a través de refresh (misma sesión), se limpia al cerrar la pestaña. Por diseño, la URL pública siempre abre en Fase de Grupos.
+- **Inline script anti-FOUC en `<head>`:** único punto donde se puede ejecutar código antes del primer paint. Lee sessionStorage y setea `data-tab` en `<html>`. CSS lo usa para estado inicial. `activateTab()` lo limpia al tomar el control.
+- **`lucide.createIcons()` doble:** una vez antes del `await` (íconos estáticos del nav/header), otra después del render (íconos dinámicos en cards).
+- **Sin módulos ES:** scripts clásicos para no requerir servidor en desarrollo local (aunque Firebase requiere HTTP de todas formas).
+- **DOM imperativo:** `createElement` en JS, sin templates HTML.
+- **Countdown hardcodeado en UTC:** `new Date('...Z')` en `header.js`, sin depender de la zona horaria del navegador.
+- **Bracket responsive sin vista alternativa:** scroll horizontal con momentum (`-webkit-overflow-scrolling: touch`) + hint visual que se desvanece. Las dimensiones `BT` se reducen por viewport.
+- **`data/results.json` no se usa más:** reemplazado por Firestore. El archivo se mantiene como legacy/referencia.
 
 ---
 
 ## Backlog
 
-### ✅ Implementados (sesión 2026-06-10)
+### Próximos pasos
 
-#### 1. `#arg-panel` y `.results-bar` ocultos temporalmente
-- `#arg-panel { display: none }` en `css/bracket.css`
-- `.results-bar { display: none }` en `css/groups.css` (sección TEMPORALES)
-- Para reactivar: quitar esa regla. Los estilos de fondo oscuro ya están listos en `#tab-grupos .results-bar`.
+1. **Fase 1 bracket:** agregar inputs de resultados del bracket en `admin.html` — igual estructura que grupos, keys `"R32-1"`, `"R16-1"`, etc. en `window.RESULTS.bracket`
+2. **Fase 2 bracket:** `resolveTeam(label)` — convierte `"1A"` al equipo real vía `calcStandings`, `"G M73"` al ganador del partido
+3. **Fase 3 bracket:** Argentina path calculado automáticamente desde resultados reales
 
-#### 2. Shimmer espera a que el bracket sea visible (integrado con ítem 6)
-- `.bt-match::before` tiene `animation-play-state: paused` por defecto.
-- Corre solo cuando el ancestro `#bt-wrapper` tiene `.bt-shimmer-active`, clase que `revealBracketCards()` agrega 350ms después del último reveal.
-- Se resetea y re-dispara en cada activación de la tab "Llaves".
+### Pendiente menor
 
-#### 3. Final centrada con las Semis
-- `adjustFinalPosition(pos)` en `js/render/bracket.js` calcula `margin-top` del `.bt-final-block` dinámicamente según `pos.sf[0]` y el viewport actual.
-- Se llama al final de `renderBracket()`. Fórmula: `marginTop = (28 + sf[0]) - aboveCardCenter - centerPadT`, donde `aboveCardCenter` suma las alturas del trofeo + márgenes + título por encima del card de la Final.
-
-#### 4. Scroll vertical indeseado en mobile — corregido
-- `overflow-y: visible` explícito en `.bracket-wrapper` (`css/bracket.css`).
-
-#### 5. Coherencia visual entre Fase de Grupos y Eliminatorias
-- `#tab-grupos` ahora tiene el mismo fondo navy oscuro con gradiente azul que `#tab-eliminatorias`.
-- Overrides de controles sobre fondo oscuro: `.view-toggle`, `.view-btn`, `.group-pill` adaptados en `css/groups.css`.
-
-#### 6. Reveal escalonado de cards + shimmer coordinado
-- Cards arrancan en `opacity: 0; transform: translateY(10px) scale(0.96)`.
-- `revealBracketCards()` en `js/render/bracket.js` revela R32→Oct→QF→SF en ambas mitades simultáneamente: `delay = roundIndex * 180 + cardIndex * 40` ms.
-- `btMatchEntrance` se dispara al agregar `.bt-revealed` (reemplaza el `animation` inline anterior).
-- `.bt-shimmer-active` se agrega al `#bt-wrapper` con `setTimeout(lastDelay + 350)`.
-
-#### 7. Robustez del sistema de resultados
-- `loadResults()` valida el status HTTP y muestra `'Error al cargar resultados'` en la UI si falla.
-- `makeBtCard()` lee `window.RESULTS.bracket[match.id]` y muestra `.bt-score` + clase `.bt-completed` cuando hay resultado.
-- `refreshResults()` llama `revealBracketCards()` si la tab de eliminatorias está activa.
-- Auto-refresh cada 5 minutos via `setInterval(refreshResults, 5 * 60 * 1000)` en `init()`.
+- **Criterios de desempate FIFA completos:** `calcStandings()` ordena por Pts → DG → GF. Faltan enfrentamiento directo y fair play.
+- **Skeleton de carga:** mientras Firebase responde, la página muestra vacío. Considerar estado esquelético.
+- **Re-render del bracket al rotar pantalla:** listener `window.resize` con debounce.
+- **Verificar 3 sedes estimadas** marcadas con `// ⚠️` en el código.
+- **Dark mode toggle.**
 
 ---
 
-### Pendiente
+## Errores corregidos
 
-- **Criterios de desempate FIFA completos:** `calcStandings()` ordena por Pts → DG → GF. FIFA usa además enfrentamiento directo y fair play, que no están implementados.
-- **Skeleton de carga:** si `loadResults()` tarda, la página se muestra un instante sin resultados. Considerar estado esquelético.
-- **Clasificación automática al bracket:** poblar los slots de `BRACKET` según posiciones finales de grupos una vez terminada la fase.
-- **Filtro por equipo:** highlight de todos los partidos de un equipo al clickearlo.
-- **Re-render del bracket al rotar pantalla:** listener `window.resize` con debounce que llame `renderBracket()`.
-- **Verificar 3 sedes estimadas** marcadas con `// ⚠️` en el código.
-- **Dark mode:** toggle con `prefers-color-scheme`.
+### Auditoría ronda 1
+
+| Archivo | Error | Fix |
+|---|---|---|
+| `js/data/groups.js` | `city: 'Dallas'` en AT&T Stadium | → `'Arlington'` |
+| `css/bracket.css` | `min-width: 900px` para 5 columnas | → `1200px` |
+| `index.html` | Botones de nav sin `type="button"` | Corregido |
+
+### Verificación de datos ronda 2
+
+| Área | Error | Fix |
+|---|---|---|
+| Grupo D | `Rep. Europeo C` | → `Türkiye` |
+| Grupo F | `Rep. Europeo B` + 6 partidos incorrectos | → `Suecia` + datos reescritos |
+| Grupo I | `Rep. FIFA Playoff 2` + 6 partidos incorrectos | → `Noruega` + datos reescritos |
+| Grupo J | 5 de 6 partidos incorrectos | Reescritos |
+| Bracket | Solo 8 "octavos" para 32 clasificados | → Ronda de 32 (M73–M88) |
+| Bracket | Argentina: `1J vs 2I` | → `1J vs 2H`, Hard Rock Miami |
+| Bracket | 3er puesto: AT&T Arlington | → Hard Rock Stadium, Miami |

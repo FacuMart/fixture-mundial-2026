@@ -426,19 +426,13 @@
 
 /* Completed match score */
 .match-score.completed {
-  font-weight: 800;
-  font-style: normal;
+  background: rgba(255, 255, 255, 0.92);
   color: var(--text-main);
+  font-weight: 900;
   letter-spacing: 0.04em;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.12);
 }
 
-/* Completed match card — subtle muted look */
-.match-card.match-completed {
-  opacity: 0.82;
-}
-.match-card.match-completed .match-team {
-  color: var(--text-muted);
-}
 
 /* ============================================================ ANIMATIONS */
 @keyframes cardEntrance {

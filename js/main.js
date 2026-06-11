@@ -3,6 +3,7 @@ function activateTab(tabName, animate) {
   const target = document.getElementById('tab-' + tabName);
   if (!btn || !target) return;
 
+  document.documentElement.removeAttribute('data-tab');
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
 
@@ -63,12 +64,18 @@ async function refreshResults() {
 (async function init() {
   document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      location.hash = btn.dataset.tab;
+      sessionStorage.setItem('activeTab', btn.dataset.tab);
       activateTab(btn.dataset.tab, true);
     });
   });
 
   document.getElementById('refresh-btn')?.addEventListener('click', refreshResults);
+
+  // Activar el tab guardado antes de cargar datos para evitar el flash
+  const saved = sessionStorage.getItem('activeTab');
+  const initialTab = ['grupos', 'eliminatorias'].includes(saved) ? saved : 'grupos';
+  activateTab(initialTab, false);
+  lucide.createIcons();
 
   await loadResults();
   renderGroups();
@@ -76,10 +83,10 @@ async function refreshResults() {
   initGroupControls();
   lucide.createIcons();
 
-  const initialTab = ['grupos', 'eliminatorias'].includes(location.hash.slice(1))
-    ? location.hash.slice(1)
-    : 'grupos';
-  activateTab(initialTab, false);
+  // Reveal del bracket después de renderizar, si corresponde
+  if (initialTab === 'eliminatorias') {
+    setTimeout(revealBracketCards, 50);
+  }
 
   // Auto-refresh cada 5 minutos
   setInterval(refreshResults, 5 * 60 * 1000);

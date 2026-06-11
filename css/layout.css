@@ -157,6 +157,26 @@
   font-weight: 600;
   text-align: center;
   line-height: 1.35;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.countdown-match .fi {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+  background-size: cover;
+  background-position: center;
+}
+.cd-vs {
+  opacity: 0.45;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
 }
 
 .countdown-info {
@@ -279,6 +299,16 @@ main { max-width: 1600px; margin: 0 auto; padding: 28px 16px 60px; }
 /* ============================================================ SECTIONS */
 .section { display: none; animation: fadeIn 0.35s ease both; }
 .section.active { display: block; }
+
+/* Estado inicial del tab — controlado por el inline script en <head> antes del primer paint */
+html[data-tab="grupos"]       .tab-btn[data-tab="grupos"],
+html[data-tab="eliminatorias"] .tab-btn[data-tab="eliminatorias"] {
+  color: var(--fifa-blue);
+  border-bottom-color: var(--gold);
+  background: rgba(0,51,160,0.04);
+}
+html[data-tab="grupos"]        #tab-grupos      { display: block; }
+html[data-tab="eliminatorias"] #tab-eliminatorias { display: block; }
 
 /* ============================================================ ANIMATIONS */
 @keyframes fadeIn       { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }

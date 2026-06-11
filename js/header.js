@@ -1,10 +1,14 @@
 (function () {
   // Partidos de Argentina en UTC (ARG = UTC-3)
   const ARG_MATCHES = [
-    { label: 'Argentina vs Argelia',  info: '16 jun · 22:00 ARG', start: new Date('2026-06-17T01:00:00Z') },
-    { label: 'Argentina vs Austria',  info: '22 jun · 14:00 ARG', start: new Date('2026-06-22T17:00:00Z') },
-    { label: 'Jordania vs Argentina', info: '27 jun · 23:00 ARG', start: new Date('2026-06-28T02:00:00Z') },
+    { home: { name: 'Argentina', flag: 'ar' }, away: { name: 'Argelia',  flag: 'dz' }, info: '16 jun · 22:00 ARG', start: new Date('2026-06-17T01:00:00Z') },
+    { home: { name: 'Argentina', flag: 'ar' }, away: { name: 'Austria',  flag: 'at' }, info: '22 jun · 14:00 ARG', start: new Date('2026-06-22T17:00:00Z') },
+    { home: { name: 'Jordania',  flag: 'jo' }, away: { name: 'Argentina',flag: 'ar' }, info: '27 jun · 23:00 ARG', start: new Date('2026-06-28T02:00:00Z') },
   ];
+
+  function matchHTML(m) {
+    return `<span class="fi fi-${m.home.flag}"></span> ${m.home.name} <span class="cd-vs">vs</span> ${m.away.name} <span class="fi fi-${m.away.flag}"></span>`;
+  }
   const MATCH_DURATION = 2 * 60 * 60 * 1000; // 2 horas
 
   // — Partículas —
@@ -51,7 +55,7 @@
       const next    = ARG_MATCHES.find(m => m.start.getTime() > now);
 
       if (ongoing) {
-        matchEl.textContent = ongoing.label;
+        matchEl.innerHTML = matchHTML(ongoing);
         if (infoEl) infoEl.textContent = ongoing.info;
         digitsEl.innerHTML  = '<div class="countdown-live"><span class="live-dot"></span> EN JUEGO</div>';
         return;
@@ -64,7 +68,7 @@
         return;
       }
 
-      matchEl.textContent = next.label;
+      matchEl.innerHTML = matchHTML(next);
       if (infoEl) infoEl.textContent = next.info;
 
       const diff  = next.start.getTime() - now;
