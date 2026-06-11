@@ -29,9 +29,7 @@ function activateTab(tabName, animate) {
 async function loadResults() {
   let fetchError = false;
   try {
-    const res = await fetch('data/results.json?t=' + Date.now());
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    window.RESULTS = await res.json();
+    window.RESULTS = await loadResultsFromFirebase();
   } catch (_) {
     window.RESULTS = { updated: null, groups: {}, bracket: {} };
     fetchError = true;
@@ -41,7 +39,7 @@ async function loadResults() {
     if (fetchError) {
       el.textContent = 'Error al cargar resultados';
     } else {
-      const ts = window.RESULTS.updated;
+      const ts = window.RESULTS?.updated;
       el.textContent = ts
         ? 'Actualizado: ' + new Date(ts).toLocaleString('es-AR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })
         : 'Sin resultados cargados';
