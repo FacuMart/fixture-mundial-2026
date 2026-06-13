@@ -39,24 +39,28 @@ function isArgentinaMatch(match) {
   return match.home === 'Argentina' || match.away === 'Argentina';
 }
 
-// ——— Calcula el estado de un partido (live / next / normal) ———
-function getMatchState(letter, group, now) {
-  let nextMatchTime = null;
-  group.matches.forEach((m, i) => {
-    const r = getResult(letter, i);
-    if (r != null) return;
-    const matchStart = parseMatchUTC(m.date, m.time);
-    if (now < matchStart && (nextMatchTime === null || matchStart < nextMatchTime)) {
-      nextMatchTime = matchStart.getTime();
-    }
+// ——— Calcula el próximo partido global (el timestamp más temprano entre todos los grupos) ———
+function calcGlobalNextUTC(now) {
+  let next = null;
+  Object.entries(GROUPS).forEach(([letter, group]) => {
+    group.matches.forEach((m, i) => {
+      if (getResult(letter, i) != null) return;
+      const t = parseMatchUTC(m.date, m.time).getTime();
+      if (t > now && (next === null || t < next)) next = t;
+    });
   });
+  return next;
+}
+
+// ——— Calcula el estado de un partido (live / next / normal) ———
+function getMatchState(letter, group, now, globalNextTime) {
   return (m, i) => {
     const r           = getResult(letter, i);
     const isCompleted = r != null;
     const matchStart  = parseMatchUTC(m.date, m.time);
     const matchEnd    = matchStart.getTime() + 2 * 60 * 60 * 1000;
     const isLive      = !isCompleted && now >= matchStart && now < matchEnd;
-    const isNext      = !isCompleted && !isLive && matchStart.getTime() === nextMatchTime;
+    const isNext      = !isCompleted && !isLive && matchStart.getTime() === globalNextTime;
     return { isCompleted, isLive, isNext, r };
   };
 }
@@ -89,7 +93,7 @@ function makeGroupCard(letter, group) {
   const matchesDiv = document.createElement('div');
   matchesDiv.className = 'group-matches';
   const now = Date.now();
-  const stateOf = getMatchState(letter, group, now);
+  const stateOf = getMatchState(letter, group, now, calcGlobalNextUTC(now));
   group.matches.forEach((m, i) => {
     const { isCompleted, isLive, isNext, r } = stateOf(m, i);
     const mc = document.createElement('div');
@@ -229,7 +233,7 @@ function makeGroupDetail(letter, group) {
   const matchesDiv = document.createElement('div');
   matchesDiv.className = 'group-matches detail-matches';
 
-  const stateOf = getMatchState(letter, group, now);
+  const stateOf = getMatchState(letter, group, now, calcGlobalNextUTC(now));
   group.matches.forEach((m, i) => {
     const { isCompleted, isLive, isNext, r } = stateOf(m, i);
     const mc = document.createElement('div');

@@ -110,17 +110,15 @@ function renderSchedule() {
   const now = Date.now();
   const matches = buildScheduleMatches();
 
-  // Próximo por grupo (misma lógica que la pestaña grupos: cada grupo marca su propio próximo)
-  const nextByGroup = {};
+  // Próximo global para partidos de grupos (el timestamp más temprano entre todos)
+  let nextGroupUTC = null;
   Object.entries(GROUPS).forEach(([letter, group]) => {
-    let t = null;
     group.matches.forEach((m, i) => {
       const r = (window.RESULTS?.groups || {})[`${letter}-${i}`];
       if (r != null) return;
       const ms = schedToUTC(schedDateKey(m.date), m.time);
-      if (ms > now && (t === null || ms < t)) t = ms;
+      if (ms > now && (nextGroupUTC === null || ms < nextGroupUTC)) nextGroupUTC = ms;
     });
-    nextByGroup[letter] = t;
   });
 
   // Próximo global solo para partidos de bracket
@@ -222,7 +220,7 @@ function renderSchedule() {
       const startUTC  = schedToUTC(m.dk, m.time);
       const isCompleted = r != null;
       const isLive      = !isCompleted && now >= startUTC && now < startUTC + 7200000;
-      const nextRef     = m.type === 'group' ? nextByGroup[m.groupLetter] : nextBracketUTC;
+      const nextRef     = m.type === 'group' ? nextGroupUTC : nextBracketUTC;
       const isNext      = !isCompleted && !isLive && startUTC === nextRef;
 
       const card = document.createElement('div');

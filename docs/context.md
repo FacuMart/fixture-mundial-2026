@@ -53,9 +53,10 @@ Single Page Application para visualizar el fixture del FIFA World Cup 2026. Vani
 | Schedule — dark panel consistente con Grupos y Llaves | ✅ Completo — gradiente navy, pills translúcidas, encabezados de día adaptados |
 | Schedule — skeleton adaptado al panel oscuro | ✅ Completo — pills/day-header con shimmer oscuro; lines dentro de cards blancas conservan gris |
 | Schedule — card Argentina: solo borde celeste izquierdo | ✅ Completo — sin gradiente de fondo, blanco igual que otras cards |
-| Schedule — próximo por grupo (no global) | ✅ Completo — `nextByGroup` por letra; `nextBracketUTC` global solo para partidos eliminatorios |
-| Grupos — próximo por grupo con múltiples simultáneos | ✅ Completo — `getMatchState` per-grupo marca todos los partidos en el mismo horario mínimo |
+| Grupos y Fechas — próximo global entre todos los grupos | ✅ Completo — `calcGlobalNextUTC()` calcula el mínimo entre todos los grupos; solo ese timestamp recibe el badge en ambas pestañas |
+| Schedule — próximo bracket global | ✅ Completo — `nextBracketUTC` mínimo entre todos los partidos de bracket sin resultado |
 | Llaves — shimmer ambos lados sincronizados | ✅ Completo — `.bt-shimmer-reset` fuerza reset de animación antes del reveal para eliminar desincronía |
+| Llaves — shimmer RTL correcto (lado derecho de derecha a izquierda) | ✅ Completo — keyframe `btCardShimmerRTL` explícito; `animation-direction: reverse` eliminado (fallaba en algunos browsers con `fill-mode: backwards`) |
 | Argentina path — solo cuando grupo completamente jugado | ✅ Completo — `computeArgIds` respeta `state.provisional`; `schedArgInSlot()` exige grupo completo para slots de posición |
 | Filtro por equipo / selección | ⬜ Pendiente |
 
@@ -278,11 +279,11 @@ Panel expandido con: header · (equipos | tabla de posiciones) · partidos del g
 
 - `.match-score.completed` → fondo `rgba(255,255,255,0.92)` + texto `var(--text-main)` + sombra sutil. Sin opacity en la card ni en los elementos hijos.
 
-### Estado compartido — `getMatchState(letter, group, now)`
+### Estado compartido — `getMatchState(letter, group, now, globalNextTime)`
 
 Función compartida entre `makeGroupCard` y `makeGroupDetail`. Devuelve una función `stateOf(m, i)` que retorna `{ isCompleted, isLive, isNext, r }` para cada partido.
 
-Lógica de `isNext`: se calcula el `nextMatchTime` mínimo dentro del grupo (solo partidos futuros sin resultado). Todos los partidos que coincidan con ese mínimo se marcan como próximos. Así, en el último matchday donde dos partidos del mismo grupo juegan a la vez, ambos aparecen marcados. Cada grupo computa su mínimo independientemente — el Grupo C puede tener su "próximo" a las 19:00 mientras el Grupo B lo tiene a las 16:00; ambos muestran el badge.
+`globalNextTime` viene de `calcGlobalNextUTC(now)`, que calcula el timestamp mínimo entre todos los grupos (partidos sin resultado y futuros). `isNext` es `true` solo cuando el partido coincide exactamente con ese timestamp global. Así, en cualquier momento solo hay uno o varios badges "Próximo" — los que se juegan en el mismo horario más próximo de todo el torneo, independientemente del grupo.
 
 ---
 
@@ -377,6 +378,8 @@ El bracket es scroll horizontal. Dimensiones `BT` se recalculan por viewport en 
 
 **Sincronización del shimmer:** al inicio de `revealBracketCards()` se agrega `.bt-shimmer-reset` a todas las cards simultáneamente (vía CSS: `animation-name: none` en `::before`), se fuerza reflow, y se quita. Esto reinicia todas las animaciones desde cero en el mismo frame, evitando que el lado izquierdo arranque antes que el derecho cuando el bracket fue previamente revelado.
 
+**Shimmer RTL (lado derecho):** las cards del lado derecho usan `animation-name: btCardShimmerRTL` — un keyframe explícito que empieza en `translateX(220%)` y viaja hacia la izquierda. Se descartó `animation-direction: reverse` porque con `animation-fill-mode: backwards` no está garantizado en todos los browsers que el estado inicial sea el frame 100% (keyframe invertido), lo que causaba que el shimmer arrancara desde la izquierda en ambas mitades.
+
 ---
 
 ## Tab "Por Fecha" (`js/render/schedule.js` + `css/schedule.css`)
@@ -400,18 +403,16 @@ buildScheduleMatches()   // agrega todos los partidos de GROUPS + BRACKET a un a
 schedArgInSlot(label)    // devuelve true solo si Argentina está CONFIRMADA en ese slot de bracket:
                          //   - slots "1J"/"2H": exige que el grupo esté completamente jugado
                          //   - slots "G M86" etc: resolveTeam ya requiere resultado de partido
-renderSchedule()         // renders pills + lista. nextByGroup (próximo por grupo) + nextBracketUTC (global bracket)
+renderSchedule()         // renders pills + lista. nextGroupUTC (global grupos) + nextBracketUTC (global bracket)
 showScheduleSkeleton()   // skeleton mientras carga Firebase: 9 pills + 8 sched-sk-card
 ```
 
 ### Lógica de "Próximo" en schedule
 
-No usa un único `nextUTC` global. Separa por tipo:
+Usa dos referencias globales, una por tipo:
 
-- **Partidos de grupo:** `nextByGroup[letter]` — mínimo futuro sin resultado por grupo. Misma lógica que `getMatchState` en grupos. Cada grupo marca su próximo independientemente.
+- **Partidos de grupo:** `nextGroupUTC` — mínimo futuro sin resultado entre *todos* los grupos. Un único timestamp; solo los partidos exactamente en ese horario reciben el badge. Consistente con `calcGlobalNextUTC()` de la pestaña Grupos.
 - **Partidos de bracket:** `nextBracketUTC` — mínimo global entre todos los partidos de bracket futuros sin resultado.
-
-Esto garantiza que si el Grupo B tiene su próximo a las 16:00 y el Grupo C a las 19:00, ambas cards muestran el badge "Próximo" en la pestaña "Por Fecha" — consistente con lo que muestra la pestaña Grupos.
 
 ### Filter bar (date pills)
 
@@ -525,6 +526,16 @@ CDN: `flag-icons@7.2.3`. Uso: `<span class="fi fi-{code}"></span>`.
 - **Verificar 3 sedes estimadas** marcadas con `// ⚠️` en el código.
 - **Dark mode toggle.**
 - **Filtro por equipo / selección.**
+
+### Mantenimiento de datos — control de fixture a futuro
+
+La fase de grupos (`js/data/groups.js`) está validada contra el Excel oficial y se considera correcta. Los partidos de la fase eliminatoria (`js/data/bracket.js`) tienen fechas, horarios y sedes cargadas según el fixture oficial, pero **deben verificarse a medida que FIFA confirme los detalles definitivos**, especialmente:
+
+- **Ronda de 32 y Octavos:** los horarios y sedes pueden ajustarse según el avance del torneo.
+- **Cuartos, Semis, Final y 3er puesto:** fechas fijas en el fixture, pero confirmar estadio/ciudad cuando FIFA lo oficialice partido a partido.
+- **Sedes marcadas con `// ⚠️`** en `bracket.js`: estimadas, pendientes de confirmación oficial.
+
+A medida que avance el torneo, revisar el fixture oficial de FIFA y corregir los campos `date`, `time`, `stadium` y `city` en `BRACKET` según corresponda.
 
 ---
 
