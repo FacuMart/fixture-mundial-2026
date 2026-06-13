@@ -54,6 +54,7 @@ async function refreshResults() {
   await loadResults();
   renderGroups();
   renderBracket();
+  renderSchedule();
   lucide.createIcons();
   if (document.getElementById('tab-eliminatorias')?.classList.contains('active')) {
     setTimeout(revealBracketCards, 50);
@@ -73,17 +74,19 @@ async function refreshResults() {
 
   // Activar el tab guardado antes de cargar datos para evitar el flash
   const saved = sessionStorage.getItem('activeTab');
-  const initialTab = ['grupos', 'eliminatorias'].includes(saved) ? saved : 'grupos';
+  const initialTab = ['grupos', 'eliminatorias', 'fechas'].includes(saved) ? saved : 'grupos';
   activateTab(initialTab, false);
 
   // Mostrar skeletons mientras espera Firebase
   showGroupsSkeleton();
   showBracketSkeleton();
+  showScheduleSkeleton();
   lucide.createIcons();
 
   await loadResults();
   renderGroups();
   renderBracket();
+  renderSchedule();
   initGroupControls();
   lucide.createIcons();
 

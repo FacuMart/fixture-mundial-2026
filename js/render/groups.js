@@ -46,18 +46,17 @@ function getMatchState(letter, group, now) {
     const r = getResult(letter, i);
     if (r != null) return;
     const matchStart = parseMatchUTC(m.date, m.time);
-    const matchEnd   = matchStart.getTime() + 2 * 60 * 60 * 1000;
     if (now < matchStart && (nextMatchTime === null || matchStart < nextMatchTime)) {
       nextMatchTime = matchStart.getTime();
     }
   });
   return (m, i) => {
-    const r          = getResult(letter, i);
+    const r           = getResult(letter, i);
     const isCompleted = r != null;
-    const matchStart = parseMatchUTC(m.date, m.time);
-    const matchEnd   = matchStart.getTime() + 2 * 60 * 60 * 1000;
-    const isLive     = !isCompleted && now >= matchStart && now < matchEnd;
-    const isNext     = !isCompleted && !isLive && matchStart.getTime() === nextMatchTime;
+    const matchStart  = parseMatchUTC(m.date, m.time);
+    const matchEnd    = matchStart.getTime() + 2 * 60 * 60 * 1000;
+    const isLive      = !isCompleted && now >= matchStart && now < matchEnd;
+    const isNext      = !isCompleted && !isLive && matchStart.getTime() === nextMatchTime;
     return { isCompleted, isLive, isNext, r };
   };
 }

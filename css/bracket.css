@@ -566,6 +566,11 @@
   animation-play-state: running;
 }
 
+/* Reset de sincronización: mata la animación para que todos arranquen desde cero */
+.bt-match.bt-shimmer-reset::before {
+  animation-name: none;
+}
+
 /* Cards de la mitad derecha barren en sentido contrario (de derecha a izquierda) */
 .bt-match.bt-shimmer-rtl::before {
   animation-direction: reverse;

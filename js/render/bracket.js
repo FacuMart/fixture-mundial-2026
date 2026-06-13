@@ -310,6 +310,12 @@ function revealBracketCards() {
   wrapper.classList.remove('bt-shimmer-active');
   wrapper.querySelectorAll('.bt-match').forEach(c => c.classList.remove('bt-revealed'));
 
+  // Reiniciar todas las animaciones shimmer al mismo punto de partida (evita desincronía entre lados)
+  const allCards = wrapper.querySelectorAll('.bt-match');
+  allCards.forEach(c => c.classList.add('bt-shimmer-reset'));
+  void wrapper.offsetHeight;
+  allCards.forEach(c => c.classList.remove('bt-shimmer-reset'));
+
   const leftHalf  = wrapper.querySelector('.bt-half:first-child');
   const rightHalf = wrapper.querySelector('.bt-half:last-child');
   if (!leftHalf || !rightHalf) return;
@@ -412,7 +418,7 @@ function computeArgFromResults() {
 
 function computeArgIds(state) {
   const ids = new Set();
-  if (!state.position) return ids;
+  if (!state.position || state.provisional) return ids;
   const path = ARG_PATH_MAP[state.position];
   if (!path) return ids;
   for (let i = 0; i < path.length; i++) {

@@ -1,0 +1,315 @@
+/* ============================================================ SCHEDULE — FILTER BAR */
+.date-filter {
+  display: flex;
+  gap: 5px;
+  overflow-x: auto;
+  padding-bottom: 6px;
+  margin-bottom: 20px;
+  scrollbar-width: none;
+}
+.date-filter::-webkit-scrollbar { display: none; }
+
+.date-pill {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 10px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all var(--transition);
+  line-height: 1.2;
+  min-width: 52px;
+}
+.date-pill:first-child {
+  justify-content: center;
+  min-width: 62px;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+.date-pill:hover  { border-color: var(--fifa-blue); color: var(--fifa-blue); }
+.date-pill.active { background: var(--fifa-blue); border-color: var(--fifa-blue); color: #fff; }
+
+.dpill-dow  { font-size: 0.63rem; font-weight: 600; opacity: 0.8; }
+.dpill-date { font-size: 0.73rem; font-weight: 800; white-space: nowrap; }
+.date-pill.active .dpill-dow { opacity: 0.9; }
+
+/* ============================================================ SCHEDULE — LIST */
+.sched-list { display: flex; flex-direction: column; gap: 30px; }
+
+.sched-day-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--fifa-blue);
+}
+.sched-day-label { display: flex; align-items: baseline; gap: 10px; }
+.sched-dow  { font-size: 1.05rem; font-weight: 800; color: var(--text-main); }
+.sched-date { font-size: 0.82rem; font-weight: 600; color: var(--text-muted); }
+.sched-count {
+  font-size: 0.71rem; font-weight: 600; color: var(--text-muted);
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 20px; padding: 2px 10px; white-space: nowrap; flex-shrink: 0;
+}
+
+/* ============================================================ SCHEDULE — CARDS GRID */
+.sched-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(268px, 1fr));
+  gap: 12px;
+}
+
+.sched-card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border: 1.5px solid transparent;
+  transition: box-shadow var(--transition), transform var(--transition);
+  animation: cardEntrance 0.35s ease both;
+}
+.sched-card:hover { box-shadow: var(--shadow-hover); transform: translateY(-2px); }
+
+.sched-card.argentina-match {
+  border-left: 3px solid var(--arg-blue);
+}
+.sched-card.match-completed { opacity: 0.68; }
+.sched-card.next-match {
+  border-color: var(--gold-dark);
+  box-shadow: var(--shadow-sm), 0 0 0 2px rgba(255,215,0,0.22);
+}
+.sched-card.live-match {
+  border-color: #ff3f3f;
+  box-shadow: var(--shadow-sm), 0 0 0 2px rgba(255,63,63,0.2);
+}
+
+/* ============================================================ SCHEDULE — CARD CONTENT */
+.sched-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.sched-round {
+  font-size: 0.62rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 2px 7px;
+  border-radius: 4px;
+  border: 1px solid;
+  white-space: nowrap;
+  max-width: 62%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sched-time {
+  font-size: 0.71rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.sched-time .lucide { width: 0.75rem; height: 0.75rem; }
+
+.sched-teams {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: space-between;
+}
+.sched-team { display: flex; align-items: center; gap: 5px; flex: 1; min-width: 0; }
+.sched-team.home { justify-content: flex-start; }
+.sched-team.away { justify-content: flex-end; }
+
+.sched-flag {
+  width: 22px;
+  height: 16px;
+  background-size: cover;
+  border: 1px solid rgba(0,0,0,0.18);
+  flex-shrink: 0;
+  display: inline-block;
+}
+.sched-name {
+  font-size: 0.84rem;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--text-main);
+}
+
+.sched-score {
+  font-size: 0.94rem;
+  font-weight: 800;
+  color: var(--text-muted);
+  white-space: nowrap;
+  padding: 3px 10px;
+  border: 1.5px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  flex-shrink: 0;
+  letter-spacing: 0.03em;
+}
+.sched-score.completed {
+  color: var(--fifa-blue);
+  border-color: var(--fifa-blue-2);
+  background: rgba(0,51,160,0.06);
+}
+
+.sched-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  font-size: 0.69rem;
+  color: var(--text-muted);
+}
+.sched-meta span { display: flex; align-items: center; gap: 3px; }
+.sched-meta .lucide { width: 0.7rem; height: 0.7rem; }
+
+.sched-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 60px;
+  color: var(--text-muted);
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+.sched-empty .lucide { width: 1.2rem; height: 1.2rem; }
+
+/* ============================================================ TAB FECHAS — DARK PANEL (consistencia con grupos y eliminatorias) */
+#tab-fechas {
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(0, 51, 160, 0.15) 0%, transparent 50%),
+    linear-gradient(170deg, #1A2B4A 0%, #0D1828 100%);
+  border-radius: var(--radius);
+  padding: 20px 20px 36px;
+  box-shadow: 0 8px 48px rgba(0, 0, 0, 0.3);
+}
+
+/* Pills sobre fondo oscuro */
+#tab-fechas .date-pill {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.11);
+  color: rgba(255, 255, 255, 0.6);
+}
+#tab-fechas .date-pill:hover {
+  border-color: var(--arg-blue);
+  color: var(--arg-blue);
+  background: rgba(116, 172, 223, 0.15);
+}
+#tab-fechas .date-pill.active {
+  background: var(--fifa-blue);
+  border-color: var(--fifa-blue);
+  color: #fff;
+}
+#tab-fechas .date-pill:focus-visible {
+  outline: 2px solid var(--arg-blue);
+  outline-offset: 2px;
+}
+
+/* Encabezados de día sobre fondo oscuro */
+#tab-fechas .sched-day-header {
+  border-bottom-color: rgba(255, 255, 255, 0.15);
+}
+#tab-fechas .sched-dow  { color: rgba(255, 255, 255, 0.9); }
+#tab-fechas .sched-date { color: rgba(255, 255, 255, 0.55); }
+#tab-fechas .sched-count {
+  background: rgba(255, 255, 255, 0.09);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* Hover de cards — sombra legible sobre fondo oscuro */
+#tab-fechas .sched-card:hover {
+  box-shadow: 0 10px 36px rgba(116, 172, 223, 0.22);
+}
+
+/* ============================================================ RESPONSIVE */
+@media (max-width: 600px) {
+  .sched-cards { grid-template-columns: 1fr; }
+  #tab-fechas  { padding: 14px 14px 28px; }
+  .sched-empty { padding: 48px 20px; }
+}
+
+/* ============================================================ SKELETON */
+.sched-sk-pill {
+  flex-shrink: 0;
+  width: 52px;
+  height: 44px;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(90deg, #e2e8f0 25%, #f0f4f8 50%, #e2e8f0 75%);
+  background-size: 800px 100%;
+  animation: skeletonShimmer 1.4s ease infinite;
+}
+.sched-sk-pill--wide { width: 64px; }
+
+.sched-sk-day-header {
+  height: 22px;
+  width: 220px;
+  border-radius: 6px;
+  margin-bottom: 16px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--border);
+  background: linear-gradient(90deg, #e2e8f0 25%, #f0f4f8 50%, #e2e8f0 75%);
+  background-size: 800px 100%;
+  animation: skeletonShimmer 1.4s ease infinite;
+}
+
+.sched-sk-card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sched-sk-line {
+  height: 12px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, #e2e8f0 25%, #f0f4f8 50%, #e2e8f0 75%);
+  background-size: 800px 100%;
+  animation: skeletonShimmer 1.4s ease infinite;
+}
+
+/* Skeleton adaptado al panel oscuro — sólo pills y day-header (las lines van dentro de cards blancas) */
+#tab-fechas .sched-sk-pill,
+#tab-fechas .sched-sk-day-header {
+  background: linear-gradient(90deg, rgba(255,255,255,0.07) 25%, rgba(255,255,255,0.13) 50%, rgba(255,255,255,0.07) 75%);
+  background-size: 800px 100%;
+}
+#tab-fechas .sched-sk-day-header {
+  border-bottom-color: rgba(255, 255, 255, 0.12);
+}
+
+.sched-sk-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+.sched-sk-row .sched-sk-line { flex-shrink: 0; }
+
+.sched-sk-teams-row { height: 28px; border-radius: 8px; }
+
+.sk-w25 { width: 25%; }
+.sk-w35 { width: 35%; }
+.sk-w40 { width: 40%; }
+.sk-w55 { width: 55%; }

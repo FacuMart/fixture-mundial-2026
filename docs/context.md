@@ -48,11 +48,20 @@ Single Page Application para visualizar el fixture del FIFA World Cup 2026. Vani
 | Datos bracket con time/stadium/city | ✅ Completo — todos los partidos eliminatorios. Fechas octavos corregidas (4–7 jul) |
 | Argentina path — ring y halo en dorado | ✅ Completo — máximo contraste contra navy del bracket |
 | Admin: formulario se limpia al cerrar sesión | ✅ Completo — `form.reset()` en logout |
+| Tab "Por Fecha" — vista cronológica de todos los partidos | ✅ Completo — `js/render/schedule.js` + `css/schedule.css` |
+| Auditoría y corrección masiva de fixture (ronda 3) | ✅ Completo — 54 de 72 partidos corregidos (fechas, horarios, sedes, emparejamientos) |
+| Schedule — dark panel consistente con Grupos y Llaves | ✅ Completo — gradiente navy, pills translúcidas, encabezados de día adaptados |
+| Schedule — skeleton adaptado al panel oscuro | ✅ Completo — pills/day-header con shimmer oscuro; lines dentro de cards blancas conservan gris |
+| Schedule — card Argentina: solo borde celeste izquierdo | ✅ Completo — sin gradiente de fondo, blanco igual que otras cards |
+| Schedule — próximo por grupo (no global) | ✅ Completo — `nextByGroup` por letra; `nextBracketUTC` global solo para partidos eliminatorios |
+| Grupos — próximo por grupo con múltiples simultáneos | ✅ Completo — `getMatchState` per-grupo marca todos los partidos en el mismo horario mínimo |
+| Llaves — shimmer ambos lados sincronizados | ✅ Completo — `.bt-shimmer-reset` fuerza reset de animación antes del reveal para eliminar desincronía |
+| Argentina path — solo cuando grupo completamente jugado | ✅ Completo — `computeArgIds` respeta `state.provisional`; `schedArgInSlot()` exige grupo completo para slots de posición |
 | Filtro por equipo / selección | ⬜ Pendiente |
 
 > ✅ **Bracket completo:** Ronda de 32 (16 partidos, M73–M88) + Octavos (8) + Cuartos (4) + Semis (2) + Final + 3er puesto = **104 partidos totales** (72 grupos + 32 eliminatorias).
 >
-> ⚠️ **Sedes pendientes de verificación:** 3 partidos tienen sede estimada: Grupo B Suiza–Canadá (Arrowhead, KC), Grupo G Irán–Nueva Zelanda (NRG, Houston), Grupo G Egipto–Irán (NRG, Houston). Marcados con `// ⚠️` en el código.
+> ✅ **Fixture fase de grupos validado** contra fuente oficial (`docs/Fixture-Copa-Mundial-FIFA-2026_ClasesExcel.xlsx`). Tiempos del Excel en EDT (UTC-4), convertidos a ARG (UTC-3) sumando +1h. Grupos E y L tenían emparejamientos incorrectos en rondas 2 y 3 — corregidos. Grupo J (Argentina) estaba correcto.
 
 ---
 
@@ -69,6 +78,7 @@ fixture-mundial-2026/
 │   ├── layout.css              ← header, nav, footer, animaciones, estado inicial de tab
 │   ├── groups.css              ← vista general/detalle de grupos, tabla de posiciones, results bar
 │   ├── bracket.css             ← bracket eliminatorias, final, 3er puesto
+│   ├── schedule.css            ← tab "Por Fecha": filter bar, date pills, sched-cards, skeleton
 │   └── admin.css               ← estilos del panel admin (dark theme)
 ├── js/
 │   ├── firebase.js             ← init Firebase, loadResultsFromFirebase(), saveResultsToFirebase()
@@ -78,7 +88,8 @@ fixture-mundial-2026/
 │   │   └── bracket.js          ← constante BRACKET (ronda32 → octavos → cuartos → semis → final)
 │   ├── render/
 │   │   ├── groups.js           ← makeGroupCard() + makeGroupDetail() + renderGroups() + initGroupControls() + calcStandings()
-│   │   └── bracket.js          ← renderBracket()
+│   │   ├── bracket.js          ← renderBracket()
+│   │   └── schedule.js         ← buildScheduleMatches() + renderSchedule() + showScheduleSkeleton()
 │   ├── header.js               ← initParticles() + initCountdown() con banderas en countdown
 │   └── main.js                 ← async init + loadResults() (Firebase) + refreshResults() + activateTab()
 ├── data/
@@ -88,7 +99,7 @@ fixture-mundial-2026/
 ```
 
 **Orden de carga de scripts en `index.html`:**
-Firebase CDN (app/auth/firestore compat) → `firebase.js` → `lucide CDN` → `header.js` → `data/groups.js` → `data/bracket.js` → `render/groups.js` → `render/bracket.js` → `main.js`
+Firebase CDN (app/auth/firestore compat) → `firebase.js` → `lucide CDN` → `header.js` → `data/groups.js` → `data/bracket.js` → `render/groups.js` → `render/bracket.js` → `render/schedule.js` → `main.js`
 
 **Orden de carga de scripts en `admin.html`:**
 Firebase CDN → `firebase.js` → `data/groups.js` → `data/bracket.js` → `admin.js`
@@ -269,7 +280,9 @@ Panel expandido con: header · (equipos | tabla de posiciones) · partidos del g
 
 ### Estado compartido — `getMatchState(letter, group, now)`
 
-Función compartida entre `makeGroupCard` y `makeGroupDetail`. Devuelve una función `stateOf(m, i)` que retorna `{ isCompleted, isLive, isNext, r }` para cada partido. Determina `isNext` buscando el `matchStart` mínimo entre los partidos pendientes — así múltiples partidos con el mismo horario se marcan todos como próximos.
+Función compartida entre `makeGroupCard` y `makeGroupDetail`. Devuelve una función `stateOf(m, i)` que retorna `{ isCompleted, isLive, isNext, r }` para cada partido.
+
+Lógica de `isNext`: se calcula el `nextMatchTime` mínimo dentro del grupo (solo partidos futuros sin resultado). Todos los partidos que coincidan con ese mínimo se marcan como próximos. Así, en el último matchday donde dos partidos del mismo grupo juegan a la vez, ambos aparecen marcados. Cada grupo computa su mínimo independientemente — el Grupo C puede tener su "próximo" a las 19:00 mientras el Grupo B lo tiene a las 16:00; ambos muestran el badge.
 
 ---
 
@@ -348,6 +361,8 @@ Ya no usa `localStorage`. Estado derivado 100% de `window.RESULTS` via `computeA
 
 `.arg-prov` marca la posición en grupo como provisional si no se jugaron los 6 partidos.
 
+**Regla de activación del camino:** `computeArgIds` retorna `Set` vacío si `state.provisional === true`. El camino (bt-arg en bracket, borde celeste en schedule) solo se activa cuando los 6 partidos del Grupo J tienen resultado — nunca con resultados parciales. En el schedule, `schedArgInSlot()` aplica la misma regla: slots de posición (`"1J"`, `"2H"`) no resuelven a Argentina hasta que el grupo correspondiente esté completamente jugado.
+
 ### Render
 
 El bracket es scroll horizontal. Dimensiones `BT` se recalculan por viewport en cada `renderBracket()`:
@@ -359,6 +374,78 @@ El bracket es scroll horizontal. Dimensiones `BT` se recalculan por viewport en 
 | < 600px | 68px | 92px | ~990px |
 
 **Animaciones:** reveal escalonado (R32→Oct→QF→SF, ambas mitades simultáneas, delay = roundIndex×180 + cardIndex×40ms) → `.bt-shimmer-active` al wrapper 350ms después.
+
+**Sincronización del shimmer:** al inicio de `revealBracketCards()` se agrega `.bt-shimmer-reset` a todas las cards simultáneamente (vía CSS: `animation-name: none` en `::before`), se fuerza reflow, y se quita. Esto reinicia todas las animaciones desde cero en el mismo frame, evitando que el lado izquierdo arranque antes que el derecho cuando el bracket fue previamente revelado.
+
+---
+
+## Tab "Por Fecha" (`js/render/schedule.js` + `css/schedule.css`)
+
+Vista cronológica de los **104 partidos** del torneo (72 grupos + 32 eliminatorias), agrupados por día con filtro de fecha.
+
+### Estructura del HTML
+
+```html
+<section id="tab-fechas" class="section">
+  <div class="date-filter" id="date-filter"></div>
+  <div class="sched-list" id="schedule-list"></div>
+</section>
+```
+
+### Funciones principales
+
+```js
+buildScheduleMatches()   // agrega todos los partidos de GROUPS + BRACKET a un array flat, ordenado por fecha/hora
+                         // cada partido de grupo incluye groupLetter para la lógica de próximo por grupo
+schedArgInSlot(label)    // devuelve true solo si Argentina está CONFIRMADA en ese slot de bracket:
+                         //   - slots "1J"/"2H": exige que el grupo esté completamente jugado
+                         //   - slots "G M86" etc: resolveTeam ya requiere resultado de partido
+renderSchedule()         // renders pills + lista. nextByGroup (próximo por grupo) + nextBracketUTC (global bracket)
+showScheduleSkeleton()   // skeleton mientras carga Firebase: 9 pills + 8 sched-sk-card
+```
+
+### Lógica de "Próximo" en schedule
+
+No usa un único `nextUTC` global. Separa por tipo:
+
+- **Partidos de grupo:** `nextByGroup[letter]` — mínimo futuro sin resultado por grupo. Misma lógica que `getMatchState` en grupos. Cada grupo marca su próximo independientemente.
+- **Partidos de bracket:** `nextBracketUTC` — mínimo global entre todos los partidos de bracket futuros sin resultado.
+
+Esto garantiza que si el Grupo B tiene su próximo a las 16:00 y el Grupo C a las 19:00, ambas cards muestran el badge "Próximo" en la pestaña "Por Fecha" — consistente con lo que muestra la pestaña Grupos.
+
+### Filter bar (date pills)
+
+- Pill "Todos" + una pill por cada día con partidos (día en `dpill-dow` + fecha en `dpill-date`)
+- `schedFilterDate`: `null` → todos los días; `"16 jun"` → solo ese día
+- **Auto-selección en primer render:** detecta la fecha de hoy en hora ARG (UTC−3). Si hay partidos ese día, la selecciona; si no, selecciona el día más próximo con partidos activos/live (`scrollKey`).
+- La pill activa se hace scroll con `scrollIntoView({ behavior: 'smooth', inline: 'center' })`
+
+### Cards (`sched-card`)
+
+| Elemento | Contenido |
+|---|---|
+| Top row | Badge de ronda (color del grupo o `--fifa-blue`) + horario ARG con ícono `clock-3` |
+| Teams row | Bandera + nombre home · score (completado o `– : –`) · nombre + bandera away |
+| Meta | Estadio (`building-2`) · Ciudad (`map-pin`) |
+| Badge extra | `● EN JUEGO` o `⚡ Próximo` según estado |
+
+**Estados de card:** `.match-completed` (opacity 0.68) · `.live-match` (borde rojo) · `.next-match` (borde dorado) · `.argentina-match` (borde izquierdo celeste 3px, fondo blanco igual que el resto).
+
+### Integración con resultados
+
+`schedGetResult(m)` lee de `window.RESULTS.groups` (key `"A-0"`) o `window.RESULTS.bracket` (key `"R32-1"`, etc.) según `m.type`. Se llama en `refreshResults()` de `main.js` junto a `renderGroups()` y `renderBracket()`.
+
+### Anti-FOUC para tab "fechas"
+
+Inline script en `<head>` actualizado:
+```js
+var t = sessionStorage.getItem('activeTab');
+document.documentElement.setAttribute('data-tab',
+  t === 'eliminatorias' ? 'eliminatorias' : t === 'fechas' ? 'fechas' : 'grupos'
+);
+```
+
+`layout.css` agrega las reglas `html[data-tab="fechas"]` para mostrar `#tab-fechas` y marcar el tab activo antes del primer paint.
 
 ---
 
