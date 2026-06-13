@@ -34,7 +34,10 @@ document.getElementById('login-form').addEventListener('submit', async e => {
   }
 });
 
-document.getElementById('logout-btn').addEventListener('click', () => auth.signOut());
+document.getElementById('logout-btn').addEventListener('click', () => {
+  auth.signOut();
+  document.getElementById('login-form').reset();
+});
 
 // ─── Carga inicial ────────────────────────────────────────────────────────────
 async function loadAndRender() {

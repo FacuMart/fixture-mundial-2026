@@ -294,17 +294,31 @@
   border-radius: 50%;
   font-weight: 800;
 }
+.pos-num.pos-third {
+  background: var(--gold);
+  color: var(--fifa-blue);
+  border-radius: 50%;
+  font-weight: 800;
+}
+.standings-table .third-possible .td-pts { color: var(--gold); }
 
 .classify-note {
   display: flex;
-  align-items: center;
-  gap: 5px;
+  flex-direction: column;
+  gap: 3px;
   margin-top: 10px;
   font-size: 0.62rem;
   font-weight: 600;
   color: var(--text-light);
 }
-.classify-note .lucide { width: 0.72rem; height: 0.72rem; color: #48BB78; }
+.classify-note-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.classify-note .lucide { width: 0.72rem; height: 0.72rem; }
+.classify-note .lucide-direct { color: #48BB78; }
+.classify-note .lucide-third  { color: var(--gold); }
 
 /* ============================================================ DETAIL MATCHES */
 .detail-matches-section { border-bottom: 1px solid var(--border); padding-top: 16px; }

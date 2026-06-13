@@ -39,6 +39,15 @@ Single Page Application para visualizar el fixture del FIFA World Cup 2026. Vani
 | Reveal escalonado de cards + shimmer coordinado | ✅ Completo |
 | Auto-refresh cada 5 min + error handling visible | ✅ Completo |
 | Visibilidad de scores en partidos completados | ✅ Completo — fondo blanco, sin opacity en card |
+| Skeleton de carga (Firebase) | ✅ Completo — 12 skeleton cards grupos + spinner bracket |
+| Próximo/en juego en vista general de grupos | ✅ Completo — `getMatchState()` compartido con vista individual |
+| Próximo/en juego marca múltiples partidos simultáneos | ✅ Completo — busca `nextMatchTime` mínimo, marca todos los que coinciden |
+| Clasificación terceros en tabla de posiciones | ✅ Completo — pos 3 badge dorado, nota "8 mejores terceros" |
+| Mejor tercero en bracket — solo cuando grupos terminados | ✅ Completo — `groupFullyPlayed()` evita mostrar equipo incorrecto |
+| Cards bracket: hover/tap con fecha, hora, estadio, ciudad | ✅ Completo — hover en desktop, tap toggle en mobile (`@media (hover: hover)`) |
+| Datos bracket con time/stadium/city | ✅ Completo — todos los partidos eliminatorios. Fechas octavos corregidas (4–7 jul) |
+| Argentina path — ring y halo en dorado | ✅ Completo — máximo contraste contra navy del bracket |
+| Admin: formulario se limpia al cerrar sesión | ✅ Completo — `form.reset()` en logout |
 | Filtro por equipo / selección | ⬜ Pendiente |
 
 > ✅ **Bracket completo:** Ronda de 32 (16 partidos, M73–M88) + Octavos (8) + Cuartos (4) + Semis (2) + Final + 3er puesto = **104 partidos totales** (72 grupos + 32 eliminatorias).
@@ -250,11 +259,17 @@ Tarjeta compacta: header con color del grupo → lista de equipos → 6 partidos
 
 Panel expandido con: header · (equipos | tabla de posiciones) · partidos del grupo · sedes.
 
-**Tabla de posiciones:** usa `calcStandings()`. Posiciones 1–2 en círculo azul FIFA. Fila Argentina en celeste.
+**Tabla de posiciones:** usa `calcStandings()`. Posiciones 1–2 en círculo azul FIFA. Posición 3 en círculo dorado (pueden clasificar como mejor tercero). Fila Argentina en celeste.
+
+**Nota de clasificación:** "Los 2 primeros clasifican directamente · Los 8 mejores terceros también clasifican" (regla 2026 con 48 equipos).
 
 **Estado de partidos:** `.match-completed` / `.next-match` / `.live-match` / `.argentina-match`.
 
 - `.match-score.completed` → fondo `rgba(255,255,255,0.92)` + texto `var(--text-main)` + sombra sutil. Sin opacity en la card ni en los elementos hijos.
+
+### Estado compartido — `getMatchState(letter, group, now)`
+
+Función compartida entre `makeGroupCard` y `makeGroupDetail`. Devuelve una función `stateOf(m, i)` que retorna `{ isCompleted, isLive, isNext, r }` para cada partido. Determina `isNext` buscando el `matchStart` mínimo entre los partidos pendientes — así múltiples partidos con el mismo horario se marcan todos como próximos.
 
 ---
 
@@ -264,20 +279,40 @@ Panel expandido con: header · (equipos | tabla de posiciones) · partidos del g
 
 ```js
 BRACKET = {
-  ronda32: [ { id, label, home, away, date, isArgPath } ],  // M73–M88
-  octavos: [ ... ],  // O1–O8
+  ronda32: [ { id, label, home, away, date, time, stadium, city, isArgPath } ],  // M73–M88
+  octavos: [ ... ],  // O1–O8  (fechas: 4–7 jul, corregidas de la versión anterior)
   cuartos: [ ... ],  // C1–C4
   semis:   [ ... ],  // SF1–SF2
-  final:   { home, away, date, stadium },
-  tercero: { home, away, date, stadium },
+  final:   { home, away, date, time, stadium, city },
+  tercero: { home, away, date, time, stadium, city },
 }
 ```
 
 `home`/`away` son slots (`'1J'`, `'G M85'`). `resolveTeam()` los convierte a `{ name, flag }` en tiempo de render.
 
+Todos los campos `time`, `stadium` y `city` están completos para los 32 partidos eliminatorios según el fixture oficial FIFA.
+
 **Camino Argentina:**
 - 1°J: R32-14 → R16-7 → QF-4 → SF-2
 - 2°J: R32-12 → R16-6 → QF-3 → SF-2 (misma semi)
+
+### Hover / tap en cards del bracket
+
+Al hacer hover (desktop) o tap (mobile) sobre una card, se expande y muestra: fecha · horario (ARG) · estadio · ciudad.
+
+- **Desktop:** `@media (hover: hover)` → `.bt-match:hover .bt-details { max-height: 96px }`
+- **Mobile:** `initBracketCardTap()` detecta dispositivos sin hover y agrega listeners de click que togglean `.bt-open`. Tap en otra card cierra la anterior (comportamiento acordeón).
+- **CSS:** `animation-fill-mode: backwards` en `::before` evita el shimmer estático durante el delay de animación.
+
+### Colores del camino Argentina
+
+- Borde izquierdo: `--arg-blue` (#74ACDF) — celeste bandera argentina
+- Ring exterior + halo pulsante (`::after`): `--gold` (#FFD700) — máximo contraste contra el navy oscuro del bracket
+- Equipos resueltos: blanco
+
+### Mejor tercero en bracket
+
+`resolveBestThird(letters)` llama a `groupFullyPlayed(letter)` por cada grupo del conjunto. Si alguno no terminó todos sus partidos, devuelve `null` y el slot muestra el placeholder (ej. `Mejor 3° ABCDF`). Evita mostrar el mismo equipo en múltiples slots cuando los grupos se superponen.
 
 ### Plan de evolución del bracket
 
@@ -399,10 +434,10 @@ CDN: `flag-icons@7.2.3`. Uso: `<span class="fi fi-{code}"></span>`.
 ### Pendiente menor
 
 - **Criterios de desempate FIFA completos:** `calcStandings()` ordena por Pts → DG → GF. Faltan enfrentamiento directo y fair play.
-- **Skeleton de carga:** mientras Firebase responde, la página muestra vacío. Considerar estado esquelético.
 - **Re-render del bracket al rotar pantalla:** listener `window.resize` con debounce.
 - **Verificar 3 sedes estimadas** marcadas con `// ⚠️` en el código.
 - **Dark mode toggle.**
+- **Filtro por equipo / selección.**
 
 ---
 

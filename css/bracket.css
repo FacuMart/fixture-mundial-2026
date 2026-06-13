@@ -259,9 +259,33 @@
   transform: scale(1.03);
   z-index: 20;
 }
+@media (hover: hover) {
+  .bt-match:hover .bt-details { max-height: 96px; }
+}
+.bt-match.bt-open .bt-details { max-height: 96px; }
+
+/* Detalle expandible en hover */
+.bt-details {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.25s ease;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+}
+.bt-detail-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  font-size: 0.56rem;
+  color: rgba(255, 255, 255, 0.42);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.bt-detail-row .lucide { width: 0.58rem; height: 0.58rem; flex-shrink: 0; }
 .bt-match.bt-arg {
   border-left-color: var(--arg-blue);
-  box-shadow: 0 0 0 1.5px var(--arg-blue), 0 2px 10px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 0 0 1.5px var(--gold), 0 2px 10px rgba(0, 0, 0, 0.35);
 }
 /* Halo animado para el camino de Argentina */
 .bt-match.bt-arg::after {
@@ -269,7 +293,7 @@
   position: absolute;
   inset: -2px;
   border-radius: inherit;
-  border: 2px solid var(--arg-blue);
+  border: 2px solid var(--gold);
   opacity: 0;
   animation: btArgGlowRing 3s ease-in-out 1s infinite;
   pointer-events: none;
@@ -531,6 +555,7 @@
     transparent 75%
   );
   animation: btCardShimmer 5s ease var(--shimmer-delay, 0.5s) infinite;
+  animation-fill-mode: backwards;
   animation-play-state: paused;
   pointer-events: none;
   z-index: 5;

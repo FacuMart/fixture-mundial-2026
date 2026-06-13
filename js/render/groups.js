@@ -39,6 +39,29 @@ function isArgentinaMatch(match) {
   return match.home === 'Argentina' || match.away === 'Argentina';
 }
 
+// ——— Calcula el estado de un partido (live / next / normal) ———
+function getMatchState(letter, group, now) {
+  let nextMatchTime = null;
+  group.matches.forEach((m, i) => {
+    const r = getResult(letter, i);
+    if (r != null) return;
+    const matchStart = parseMatchUTC(m.date, m.time);
+    const matchEnd   = matchStart.getTime() + 2 * 60 * 60 * 1000;
+    if (now < matchStart && (nextMatchTime === null || matchStart < nextMatchTime)) {
+      nextMatchTime = matchStart.getTime();
+    }
+  });
+  return (m, i) => {
+    const r          = getResult(letter, i);
+    const isCompleted = r != null;
+    const matchStart = parseMatchUTC(m.date, m.time);
+    const matchEnd   = matchStart.getTime() + 2 * 60 * 60 * 1000;
+    const isLive     = !isCompleted && now >= matchStart && now < matchEnd;
+    const isNext     = !isCompleted && !isLive && matchStart.getTime() === nextMatchTime;
+    return { isCompleted, isLive, isNext, r };
+  };
+}
+
 // ——— Tarjeta compacta (vista general) ———
 function makeGroupCard(letter, group) {
   const card = document.createElement('div');
@@ -66,12 +89,16 @@ function makeGroupCard(letter, group) {
 
   const matchesDiv = document.createElement('div');
   matchesDiv.className = 'group-matches';
+  const now = Date.now();
+  const stateOf = getMatchState(letter, group, now);
   group.matches.forEach((m, i) => {
-    const r = getResult(letter, i);
+    const { isCompleted, isLive, isNext, r } = stateOf(m, i);
     const mc = document.createElement('div');
     mc.className = 'match-card'
       + (isArgentinaMatch(m) ? ' argentina-match' : '')
-      + (r != null ? ' match-completed' : '');
+      + (isCompleted ? ' match-completed' : '')
+      + (isNext      ? ' next-match'      : '')
+      + (isLive      ? ' live-match'      : '');
 
     const homeTeam = group.teams.find(t => t.name === m.home);
     const awayTeam = group.teams.find(t => t.name === m.away);
@@ -80,8 +107,14 @@ function makeGroupCard(letter, group) {
     const scoreHtml = r != null
       ? `<div class="match-score completed">${r.home} : ${r.away}</div>`
       : `<div class="match-score">– : –</div>`;
+    const badge = isLive
+      ? '<div class="live-match-badge"><span class="live-dot-sm"></span> EN JUEGO</div>'
+      : isNext
+        ? '<div class="next-match-badge"><i data-lucide="zap"></i> Próximo</div>'
+        : '';
 
     mc.innerHTML = `
+      ${badge}
       <div class="match-teams">
         <div class="match-team"><span>${hFlag}</span><span>${m.home}</span></div>
         ${scoreHtml}
@@ -166,8 +199,8 @@ function makeGroupDetail(letter, group) {
     </thead>
     <tbody>
       ${standings.map((t, i) => `
-        <tr class="${i < 2 ? 'qualifies' : ''}${t.isArgentina ? ' argentina-row' : ''}">
-          <td><span class="pos-num${i < 2 ? ' pos-qualifies' : ''}">${i + 1}</span></td>
+        <tr class="${i < 2 ? 'qualifies' : i === 2 ? 'third-possible' : ''}${t.isArgentina ? ' argentina-row' : ''}">
+          <td><span class="pos-num${i < 2 ? ' pos-qualifies' : i === 2 ? ' pos-third' : ''}">${i + 1}</span></td>
           <td class="td-team">${flagImg(t.flag)}<span>${t.name}</span></td>
           <td>${t.pj}</td><td>${t.g}</td><td>${t.e}</td><td>${t.p}</td>
           <td>${t.gf}</td><td>${t.gc}</td>
@@ -180,7 +213,10 @@ function makeGroupDetail(letter, group) {
 
   const classNote = document.createElement('div');
   classNote.className = 'classify-note';
-  classNote.innerHTML = `<i data-lucide="arrow-up-circle"></i> Los 2 primeros clasifican`;
+  classNote.innerHTML = `
+    <div class="classify-note-row"><i data-lucide="arrow-up-circle" class="lucide-direct"></i> Los 2 primeros clasifican directamente</div>
+    <div class="classify-note-row"><i data-lucide="circle-dot" class="lucide-third"></i> Los 8 mejores terceros también clasifican</div>
+  `;
   standingsCol.appendChild(classNote);
 
   topRow.appendChild(standingsCol);
@@ -193,24 +229,16 @@ function makeGroupDetail(letter, group) {
 
   const matchesDiv = document.createElement('div');
   matchesDiv.className = 'group-matches detail-matches';
-  let nextFound = false;
 
+  const stateOf = getMatchState(letter, group, now);
   group.matches.forEach((m, i) => {
-    const r           = getResult(letter, i);
-    const isCompleted = r != null;
-    const mc          = document.createElement('div');
-    const isArg       = isArgentinaMatch(m);
-    const matchStart  = parseMatchUTC(m.date, m.time);
-    const matchEnd    = matchStart.getTime() + 2 * 60 * 60 * 1000;
-    const isLive      = !isCompleted && now >= matchStart && now < matchEnd;
-    const isNext      = !nextFound && !isCompleted && matchStart > now && !isLive;
-    if (isNext) nextFound = true;
-
+    const { isCompleted, isLive, isNext, r } = stateOf(m, i);
+    const mc = document.createElement('div');
     mc.className = 'match-card'
-      + (isArg       ? ' argentina-match' : '')
+      + (isArgentinaMatch(m) ? ' argentina-match' : '')
       + (isCompleted ? ' match-completed' : '')
-      + (isNext      ? ' next-match' : '')
-      + (isLive      ? ' live-match' : '');
+      + (isNext      ? ' next-match'      : '')
+      + (isLive      ? ' live-match'      : '');
 
     const homeTeam = group.teams.find(t => t.name === m.home);
     const awayTeam = group.teams.find(t => t.name === m.away);
@@ -219,7 +247,6 @@ function makeGroupDetail(letter, group) {
     const scoreHtml = isCompleted
       ? `<div class="match-score completed">${r.home} : ${r.away}</div>`
       : `<div class="match-score">– : –</div>`;
-
     const badge = isLive
       ? '<div class="live-match-badge"><span class="live-dot-sm"></span> EN JUEGO</div>'
       : isNext

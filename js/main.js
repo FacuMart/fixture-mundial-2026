@@ -75,6 +75,10 @@ async function refreshResults() {
   const saved = sessionStorage.getItem('activeTab');
   const initialTab = ['grupos', 'eliminatorias'].includes(saved) ? saved : 'grupos';
   activateTab(initialTab, false);
+
+  // Mostrar skeletons mientras espera Firebase
+  showGroupsSkeleton();
+  showBracketSkeleton();
   lucide.createIcons();
 
   await loadResults();
@@ -91,3 +95,34 @@ async function refreshResults() {
   // Auto-refresh cada 5 minutos
   setInterval(refreshResults, 5 * 60 * 1000);
 })();
+
+function showGroupsSkeleton() {
+  const grid = document.getElementById('groups-grid');
+  if (!grid) return;
+  grid.innerHTML = Array.from({ length: 12 }, () => `
+    <div class="skeleton-card">
+      <div class="skeleton-header"></div>
+      <div class="skeleton-body">
+        <div class="skeleton-line sk-w80"></div>
+        <div class="skeleton-line sk-w65"></div>
+        <div class="skeleton-line sk-w75"></div>
+        <div class="skeleton-line sk-w70"></div>
+        <div class="skeleton-divider"></div>
+        <div class="skeleton-line sk-w90"></div>
+        <div class="skeleton-line sk-w85"></div>
+        <div class="skeleton-line sk-w90"></div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function showBracketSkeleton() {
+  const container = document.getElementById('bracket-container');
+  if (!container) return;
+  container.innerHTML = `
+    <div class="bracket-skeleton-loader">
+      <div class="bracket-skeleton-spinner"></div>
+      <span>Cargando bracket…</span>
+    </div>
+  `;
+}

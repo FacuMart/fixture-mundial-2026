@@ -356,7 +356,6 @@ footer p { color: rgba(255,255,255,0.5); font-size: 0.75rem; margin-top: 8px; }
   .site-header { padding: 20px 16px 18px; }
 
   .tab-nav {
-    justify-content: flex-start;
     overflow-x: auto;
     scrollbar-width: none;
     padding: 12px 10px 0;
@@ -379,4 +378,69 @@ footer p { color: rgba(255,255,255,0.5); font-size: 0.75rem; margin-top: 8px; }
   .header-title { font-size: clamp(1.5rem, 7vw, 2rem); }
   .footer-stats { gap: 12px; }
   main { padding: 14px 8px 40px; }
+}
+
+/* ============================================================ SKELETONS */
+@keyframes skeletonShimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position:  400px 0; }
+}
+
+.skeleton-card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+.skeleton-header {
+  height: 52px;
+  background: linear-gradient(90deg, #e2e8f0 25%, #f0f4f8 50%, #e2e8f0 75%);
+  background-size: 800px 100%;
+  animation: skeletonShimmer 1.4s ease infinite;
+}
+.skeleton-body {
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.skeleton-line {
+  height: 12px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, #e2e8f0 25%, #f0f4f8 50%, #e2e8f0 75%);
+  background-size: 800px 100%;
+  animation: skeletonShimmer 1.4s ease infinite;
+}
+.skeleton-divider { height: 1px; background: var(--border); margin: 2px 0; }
+.sk-w65 { width: 65%; }
+.sk-w70 { width: 70%; }
+.sk-w75 { width: 75%; }
+.sk-w80 { width: 80%; }
+.sk-w85 { width: 85%; }
+.sk-w90 { width: 90%; }
+
+/* Bracket skeleton */
+.bracket-skeleton-loader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  height: 320px;
+  color: var(--text-muted);
+  font-size: 0.88rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+}
+.bracket-skeleton-spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid var(--border);
+  border-top-color: var(--fifa-blue);
+  border-radius: 50%;
+  animation: spinnerRotate 0.8s linear infinite;
+}
+@keyframes spinnerRotate {
+  to { transform: rotate(360deg); }
 }

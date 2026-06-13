@@ -73,7 +73,14 @@ function findBracketMatchByLabel(labelStr) {
   return all.find(m => (m.label || m.id) === labelStr) ?? null;
 }
 
+function groupFullyPlayed(letter) {
+  const group = GROUPS[letter];
+  if (!group) return false;
+  return group.matches.every((_, i) => getResult(letter, i) != null);
+}
+
 function resolveBestThird(letters) {
+  if (!letters.every(groupFullyPlayed)) return null;
   const thirds = letters
     .map(l => { const g = GROUPS[l]; return g ? calcStandings(l, g)[2] : null; })
     .filter(Boolean);
@@ -107,12 +114,19 @@ function makeBtCard(match) {
   const homeR = resolveTeam(match.home) != null;
   const awayR = resolveTeam(match.away) != null;
 
+  const detailRows = [
+    match.date    ? `<div class="bt-detail-row"><i data-lucide="calendar"></i>${match.date}</div>` : '',
+    match.time    ? `<div class="bt-detail-row"><i data-lucide="clock"></i>${match.time} (ARG)</div>` : '',
+    match.stadium ? `<div class="bt-detail-row"><i data-lucide="building-2"></i>${match.stadium}</div>` : '',
+    match.city    ? `<div class="bt-detail-row"><i data-lucide="map-pin"></i>${match.city}</div>` : '',
+  ].join('');
+
   el.innerHTML = `
     <div class="bt-label">${match.label}</div>
     <div class="bt-team${homeR ? ' bt-team--resolved' : ''}">${teamHtml(match.home)}</div>
     ${scoreHtml}
     <div class="bt-team${awayR ? ' bt-team--resolved' : ''}">${teamHtml(match.away)}</div>
-    <div class="bt-date"><i data-lucide="calendar"></i>${match.date}</div>
+    ${detailRows ? `<div class="bt-details">${detailRows}</div>` : ''}
   `;
   return el;
 }
@@ -251,6 +265,19 @@ function renderBracket() {
   adjustFinalPosition(pos);
   renderArgPanel();
   applyArgPath();
+  initBracketCardTap();
+}
+
+function initBracketCardTap() {
+  if (window.matchMedia('(hover: hover)').matches) return;
+  document.querySelectorAll('#bt-wrapper .bt-match').forEach(card => {
+    card.addEventListener('click', () => {
+      const isOpen = card.classList.contains('bt-open');
+      document.querySelectorAll('#bt-wrapper .bt-match.bt-open')
+        .forEach(c => c.classList.remove('bt-open'));
+      if (!isOpen) card.classList.add('bt-open');
+    });
+  });
 }
 
 // Centra el card de la Final al mismo nivel vertical que las Semis
